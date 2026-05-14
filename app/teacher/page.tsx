@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ClipboardList, Search, AlertTriangle, LogOut, Loader2,
-  Users, Clock, Plus, ChevronRight, XCircle, GraduationCap,
+  Users, Clock, Plus, ChevronRight, XCircle, GraduationCap, Bus,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -283,6 +283,27 @@ export default function TeacherPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-5 space-y-5">
+        {/* 내 반 탑승 현황 — 승차점호 진행 중이고 담임반이 설정된 경우에만 표시 */}
+        {appUser?.담임반 && sessions.some((s) => s.type === "승차점호") && (() => {
+          const boardingSession = sessions.find((s) => s.type === "승차점호")!;
+          return (
+            <Link href={`/teacher/checkin?session=${boardingSession.id}`}>
+              <div className="bg-blue-600 rounded-2xl p-4 flex items-center justify-between shadow-md hover:bg-blue-700 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Bus className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-white text-sm">내 반 탑승 현황</p>
+                    <p className="text-xs text-blue-100">{appUser.담임학년 ? `${appUser.담임학년}학년 ` : ""}{appUser.담임반}반 · 실시간 모니터링</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-white/80" />
+              </div>
+            </Link>
+          );
+        })()}
+
         <div className="grid grid-cols-2 gap-3">
           <Link href="/teacher/search">
             <Card className="bg-white border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">
