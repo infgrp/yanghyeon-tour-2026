@@ -24,9 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+
 
 function timeLeft(session: CheckinSession): string {
   const diff = session.endAt.toDate().getTime() - Date.now();
@@ -122,7 +120,7 @@ function CreateSessionDialog({ uid }: { uid: string }) {
   const [scopeType, setScopeType] = useState("전체");
   const [scopeVal, setScopeVal] = useState("");
   const [name, setName] = useState("");
-  const [duration, setDuration] = useState("30");
+  const [duration, setDuration] = useState(30);
   const [busy, setBusy] = useState(false);
 
   async function handleCreate(e: React.FormEvent) {
@@ -136,10 +134,10 @@ function CreateSessionDialog({ uid }: { uid: string }) {
     try {
       await createManualSession({
         type, scope: scope as Parameters<typeof createManualSession>[0]["scope"],
-        name: name.trim(), durationMinutes: Number(duration), openedBy: uid,
+        name: name.trim(), durationMinutes: duration, openedBy: uid,
       });
       toast.success("점호 세션이 시작되었습니다.");
-      setOpen(false); setName("");
+      setOpen(false); setName(""); setScopeVal(""); setScopeType("전체");
     } catch { toast.error("세션 생성 실패."); }
     finally { setBusy(false); }
   }
@@ -160,49 +158,63 @@ function CreateSessionDialog({ uid }: { uid: string }) {
               placeholder="예: 2일차 저녁 점호"
               className="border-gray-300 text-gray-900 bg-white" required />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-gray-700">유형</Label>
-              <Select value={type} onValueChange={(v) => setType(v as typeof type)}>
-                <SelectTrigger className="border-gray-300 text-gray-900 bg-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="정시점호">정시점호</SelectItem>
-                  <SelectItem value="승차점호">승차점호</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-gray-700">대상</Label>
-              <Select value={scopeType} onValueChange={(v) => { if (v !== null) setScopeType(v); }}>
-                <SelectTrigger className="border-gray-300 text-gray-900 bg-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="전체">전체</SelectItem>
-                  <SelectItem value="학급">학급(반)</SelectItem>
-                  <SelectItem value="호실">호실</SelectItem>
-                  <SelectItem value="호차">호차</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          {scopeType !== "전체" && (
-            <div className="space-y-1.5">
-              <Label className="text-gray-700">
-                {scopeType === "학급" ? "반 번호" : scopeType === "호실" ? "호실 번호" : "호차 번호"}
-              </Label>
-              <Input value={scopeVal} onChange={(e) => setScopeVal(e.target.value)}
-                className="border-gray-300 text-gray-900 bg-white" required />
-            </div>
-          )}
+
           <div className="space-y-1.5">
-            <Label className="text-gray-700">진행 시간 (분)</Label>
-            <Input type="number" min={5} max={120} value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              className="border-gray-300 text-gray-900 bg-white" />
+            <Label className="text-gray-700">유형</Label>
+            <div className="flex gap-2">
+              {(["정시점호", "승차점호"] as const).map((t) => (
+                <button key={t} type="button" onClick={() => setType(t)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    type === t
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                  }`}>
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-gray-700">대상</Label>
+            <div className="flex gap-1.5 flex-wrap">
+              {(["전체", "학급", "호실", "호차"] as const).map((s) => (
+                <button key={s} type="button" onClick={() => { setScopeType(s); setScopeVal(""); }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    scopeType === s
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                  }`}>
+                  {s}
+                </button>
+              ))}
+            </div>
+            {scopeType !== "전체" && (
+              <Input value={scopeVal} onChange={(e) => setScopeVal(e.target.value)}
+                placeholder={
+                  scopeType === "학급" ? "반 번호 (예: 1)" :
+                  scopeType === "호실" ? "호실 (예: 201)" : "호차 번호 (예: 1)"
+                }
+                className="border-gray-300 text-gray-900 bg-white mt-1" />
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-gray-700">진행 시간</Label>
+            <div className="flex gap-2">
+              {[10, 20, 30, 60].map((m) => (
+                <button key={m} type="button" onClick={() => setDuration(m)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    duration === m
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                  }`}>
+                  {m}분
+                </button>
+              ))}
+            </div>
+          </div>
+
           <Button type="submit" className="w-full" disabled={busy}>
             {busy && <Loader2 className="w-4 h-4 animate-spin mr-2" />}점호 시작
           </Button>

@@ -16,9 +16,6 @@ import { useAuth } from "@/lib/auth-context";
 import { createIncident, getIncidents, updateIncident, getStudents } from "@/lib/firestore";
 import type { Incident, IncidentSeverity, Student } from "@/types";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 
@@ -89,30 +86,37 @@ function CreateIncidentForm({ uid, students, onCreated }: {
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-gray-700">유형</Label>
-              <Select value={유형} onValueChange={(v) => { if (v !== null) set유형(v); }}>
-                <SelectTrigger className="border-gray-300 text-gray-900 bg-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {INCIDENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
+          <div className="space-y-1.5">
+            <Label className="text-gray-700">유형</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {INCIDENT_TYPES.map((t) => (
+                <button key={t} type="button" onClick={() => set유형(t)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    유형 === t
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                  }`}>
+                  {t}
+                </button>
+              ))}
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-gray-700">심각도</Label>
-              <Select value={심각도} onValueChange={(v) => set심각도(v as IncidentSeverity)}>
-                <SelectTrigger className="border-gray-300 text-gray-900 bg-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CRITICAL">위급</SelectItem>
-                  <SelectItem value="MAJOR">중요</SelectItem>
-                  <SelectItem value="MINOR">경미</SelectItem>
-                </SelectContent>
-              </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-gray-700">심각도</Label>
+            <div className="flex gap-2">
+              {([["CRITICAL", "위급"], ["MAJOR", "중요"], ["MINOR", "경미"]] as const).map(([val, label]) => (
+                <button key={val} type="button" onClick={() => set심각도(val)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    심각도 === val
+                      ? val === "CRITICAL" ? "bg-red-500 text-white border-red-500"
+                        : val === "MAJOR" ? "bg-amber-500 text-white border-amber-500"
+                        : "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+                  }`}>
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
