@@ -303,3 +303,20 @@ export async function getTeachers(): Promise<AppUser[]> {
   );
   return snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUser));
 }
+
+// ── Admin: 버스 인솔교사1 → 담임반 동기화 ─────────────────────
+export async function syncTeacherHomerooms(): Promise<number> {
+  const [buses, teachers] = await Promise.all([getBuses(), getTeachers()]);
+  const batch = writeBatch(db);
+  let count = 0;
+  for (const bus of buses) {
+    const 반 = parseInt(String(bus.탑승반));
+    if (isNaN(반)) continue;
+    const teacher = teachers.find((t) => t.이름 === bus.인솔교사1);
+    if (!teacher) continue;
+    batch.update(doc(db, "users", teacher.uid), { 담임반: 반 });
+    count++;
+  }
+  await batch.commit();
+  return count;
+}

@@ -16,6 +16,7 @@ import { parseExcel, type SheetDebugInfo } from "@/lib/excel";
 import {
   batchUpsertStudents, batchUpsertRooms, batchUpsertSchedule,
   batchUpsertBuses, batchUpsertContacts, fixScheduleCheckinTypes,
+  syncTeacherHomerooms,
 } from "@/lib/firestore";
 
 interface ParsedData {
@@ -115,6 +116,7 @@ export default function AdminUploadPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [uploadedSheets, setUploadedSheets] = useState<string[]>([]);
   const [fixingCheckin, setFixingCheckin] = useState(false);
+  const [syncingHomerooms, setSyncingHomerooms] = useState(false);
 
   async function handleFixCheckin() {
     setFixingCheckin(true);
@@ -125,6 +127,18 @@ export default function AdminUploadPage() {
       toast.error(err instanceof Error ? err.message : "적용 실패");
     } finally {
       setFixingCheckin(false);
+    }
+  }
+
+  async function handleSyncHomerooms() {
+    setSyncingHomerooms(true);
+    try {
+      const count = await syncTeacherHomerooms();
+      toast.success(`담임 정보 동기화 완료 (${count}명 업데이트)`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "동기화 실패");
+    } finally {
+      setSyncingHomerooms(false);
     }
   }
 
@@ -320,6 +334,22 @@ export default function AdminUploadPage() {
             <Button onClick={handleFixCheckin} disabled={fixingCheckin} className="w-full">
               {fixingCheckin && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Firestore 일괄 적용
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-gray-200 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base text-gray-900">담임 정보 동기화</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-gray-500 mb-3">
+              버스 시트의 <strong>인솔교사1</strong> 이름과 <strong>탑승반</strong>을 기반으로<br />
+              교사 계정의 담임반을 자동 설정합니다.
+            </p>
+            <Button onClick={handleSyncHomerooms} disabled={syncingHomerooms} className="w-full">
+              {syncingHomerooms && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              담임 정보 동기화
             </Button>
           </CardContent>
         </Card>
