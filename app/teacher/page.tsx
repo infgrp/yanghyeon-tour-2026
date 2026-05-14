@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ClipboardList, Search, AlertTriangle, LogOut, Loader2,
-  Users, Clock, Plus, ChevronRight, XCircle, GraduationCap, Bus, Hotel,
+  Users, Clock, Plus, ChevronRight, XCircle, GraduationCap, Bus, Hotel, Calendar, Phone,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -340,6 +340,28 @@ export default function TeacherPage() {
                 </div>
                 <p className="font-medium text-sm text-gray-900">숙소 배정</p>
                 <p className="text-xs text-gray-400">호실별 학생 조회</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/schedule">
+            <Card className="bg-white border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">
+              <CardContent className="pt-5 pb-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-blue-600" />
+                </div>
+                <p className="font-medium text-sm text-gray-900">여행 일정</p>
+                <p className="text-xs text-gray-400">일차별 일정표</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/contacts">
+            <Card className="bg-white border-gray-200 shadow-sm hover:border-green-400 hover:shadow-md transition-all cursor-pointer">
+              <CardContent className="pt-5 pb-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                  <Phone className="w-5 h-5 text-green-600" />
+                </div>
+                <p className="font-medium text-sm text-gray-900">비상 연락처</p>
+                <p className="text-xs text-gray-400">긴급 연락처 조회</p>
               </CardContent>
             </Card>
           </Link>

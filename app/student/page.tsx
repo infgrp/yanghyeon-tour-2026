@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   User, Bus, Hotel, Plane, CheckCircle2, Clock, Phone,
-  AlertTriangle, LogOut, QrCode, Loader2,
+  AlertTriangle, LogOut, QrCode, Loader2, Calendar,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -246,6 +246,28 @@ export default function StudentPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* 바로가기 */}
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/schedule">
+            <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 flex items-center gap-3 hover:border-blue-500 transition-colors">
+              <Calendar className="w-5 h-5 text-blue-400 shrink-0" />
+              <div>
+                <p className="text-sm font-medium">여행 일정</p>
+                <p className="text-xs text-slate-400">일차별 일정</p>
+              </div>
+            </div>
+          </Link>
+          <Link href="/contacts">
+            <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 flex items-center gap-3 hover:border-green-500 transition-colors">
+              <Phone className="w-5 h-5 text-green-400 shrink-0" />
+              <div>
+                <p className="text-sm font-medium">비상 연락처</p>
+                <p className="text-xs text-slate-400">긴급 연락처</p>
+              </div>
+            </div>
+          </Link>
+        </div>
 
         {/* 진행 중 점호 */}
         <Card className="bg-slate-900 border-slate-700">
