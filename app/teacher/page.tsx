@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ClipboardList, Search, AlertTriangle, LogOut, Loader2,
-  Users, Clock, Plus, ChevronRight, XCircle, GraduationCap, Bus,
+  Users, Clock, Plus, ChevronRight, XCircle, GraduationCap, Bus, Hotel,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -329,6 +329,17 @@ export default function TeacherPage() {
                 </div>
                 <p className="font-medium text-sm text-gray-900">사건사고 등록</p>
                 <p className="text-xs text-gray-400">인시던트 기록</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/teacher/rooms">
+            <Card className="bg-white border-gray-200 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer">
+              <CardContent className="pt-5 pb-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
+                  <Hotel className="w-5 h-5 text-indigo-600" />
+                </div>
+                <p className="font-medium text-sm text-gray-900">숙소 배정</p>
+                <p className="text-xs text-gray-400">호실별 학생 조회</p>
               </CardContent>
             </Card>
           </Link>
