@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.role == 'admin';
+    }
+    function isTeacher() {
+      return request.auth != null && request.auth.token.role == 'teacher';
+    }
+    function isStudent() {
+      return request.auth != null && request.auth.token.role == 'student';
+    }
+    function isAuth() {
+      return request.auth != null;
+    }
+    function isTeacherOrAdmin() {
+      return isTeacher() || isAdmin();
+    }
+
+    match /students/{sid} {
+      allow read: if isTeacherOrAdmin()
+                  || (isStudent() && resource.data.uid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    match /rooms/{rid} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    match /schedule/{eid} {
+      allow read: if true;   // 공개 일정표
+      allow write: if isAdmin();
+    }
+
+    match /buses/{bid} {
+      allow read: if isTeacherOrAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /contacts/{cid} {
+      // 클라이언트는 공개여부='Y'만 쿼리하도록 구성, 규칙은 전체 허용
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /checkin_sessions/{sid} {
+      allow read:   if isAuth();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /checkins/{cid} {
+      allow create: if isAuth();
+      allow read:   if isTeacherOrAdmin()
+                    || (isStudent() && resource.data.byUid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /incidents/{iid} {
+      allow create, read: if isTeacherOrAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    match /users/{uid} {
+      allow read:  if request.auth.uid == uid || isTeacherOrAdmin();
+      allow write: if request.auth.uid == uid || isAdmin();
+    }
+
+    match /settings/global {
+      allow read:  if isAuth();
+      allow write: if isAdmin();
+    }
+  }
+}
