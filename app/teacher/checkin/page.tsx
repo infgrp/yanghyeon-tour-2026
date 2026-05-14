@@ -70,7 +70,7 @@ export default function TeacherCheckinPage() {
   const [session, setSession] = useState<CheckinSession | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterMode>("all");
-  const [gradeFilter, setGradeFilter] = useState("전체");
+  const [classFilter, setClassFilter] = useState("전체");
   const [tappingId, setTappingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -101,7 +101,7 @@ export default function TeacherCheckinPage() {
 
   const filtered = useMemo(() => {
     let list = students;
-    if (gradeFilter !== "전체") list = list.filter((s) => s.학년 === Number(gradeFilter));
+    if (classFilter !== "전체") list = list.filter((s) => s.반 === Number(classFilter));
     if (search.trim()) {
       const q = search.trim();
       list = list.filter((s) =>
@@ -112,7 +112,7 @@ export default function TeacherCheckinPage() {
     if (filter === "done") list = list.filter((s) => checkedIds.has(s.id));
     if (filter === "missing") list = list.filter((s) => !checkedIds.has(s.id));
     return list.sort((a, b) => a.반 - b.반 || a.번호 - b.번호);
-  }, [students, search, filter, gradeFilter, checkedIds]);
+  }, [students, search, filter, classFilter, checkedIds]);
 
   const stats = useMemo(() => ({
     total: students.length,
@@ -184,15 +184,15 @@ export default function TeacherCheckinPage() {
                 placeholder="이름, 학년·반·번호 검색"
                 className="pl-9 border-gray-300 text-gray-900 bg-white" />
             </div>
-            <Select value={gradeFilter} onValueChange={(v) => setGradeFilter(v ?? "전체")}>
+            <Select value={classFilter} onValueChange={(v) => setClassFilter(v ?? "전체")}>
               <SelectTrigger className="w-20 border-gray-300 text-gray-900 bg-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="전체">전체</SelectItem>
-                <SelectItem value="1">1학년</SelectItem>
-                <SelectItem value="2">2학년</SelectItem>
-                <SelectItem value="3">3학년</SelectItem>
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                  <SelectItem key={n} value={String(n)}>{n}반</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
