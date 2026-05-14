@@ -322,7 +322,7 @@ export default function TeacherPage() {
               <div className="text-center py-6 text-gray-400">
                 <Clock className="w-8 h-8 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">진행 중인 점호가 없습니다.</p>
-                <p className="text-xs mt-1">상단 "점호 시작" 버튼으로 수동 점호를 시작하세요.</p>
+                <p className="text-xs mt-1">상단 &quot;점호 시작&quot; 버튼으로 수동 점호를 시작하세요.</p>
               </div>
             ) : (
               sessions.map((s) => (

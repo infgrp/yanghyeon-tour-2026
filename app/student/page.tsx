@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   User, Bus, Hotel, Plane, CheckCircle2, Clock, Phone,
-  AlertTriangle, LogOut, QrCode, Loader2, ChevronRight,
+  AlertTriangle, LogOut, QrCode, Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";

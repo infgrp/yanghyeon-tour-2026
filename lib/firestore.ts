@@ -6,7 +6,6 @@ import {
   addDoc,
   setDoc,
   updateDoc,
-  deleteDoc,
   query,
   where,
   orderBy,
@@ -14,8 +13,6 @@ import {
   Timestamp,
   serverTimestamp,
   writeBatch,
-  limit,
-  DocumentReference,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type {
