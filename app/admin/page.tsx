@@ -15,7 +15,7 @@ import {
 import {
   Users, Upload, Settings, LogOut, Loader2, Shield, QrCode,
   AlertTriangle, CheckCircle2, Clock, ChevronRight, Key, Printer,
-  ToggleLeft, ToggleRight, Plus, X, Search, GraduationCap, Timer,
+  ToggleLeft, ToggleRight, Plus, X, Search, GraduationCap, Timer, Bus,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -258,6 +258,23 @@ function DashboardTab({ students, incidents, sessions, onPrintQR, printingQR }: 
 
       <div className="space-y-2">
         <p className="text-sm font-semibold text-gray-700">바로가기</p>
+
+        <Link href="/teacher/boarding">
+          <Card className="bg-white border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">
+            <CardContent className="py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Bus className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm text-gray-900">승차 현황 모니터링</p>
+                  <p className="text-xs text-gray-500">전체 반 탑승 실시간 현황</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </CardContent>
+          </Card>
+        </Link>
 
         <Link href="/admin/upload">
           <Card className="bg-white border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">

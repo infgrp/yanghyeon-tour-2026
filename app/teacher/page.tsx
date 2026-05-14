@@ -288,7 +288,7 @@ export default function TeacherPage() {
           const current = sessions[0];
           const isBus = current.type === "승차점호";
           return (
-            <Link href={`/teacher/checkin?session=${current.id}`}>
+            <Link href={isBus ? "/teacher/boarding" : `/teacher/checkin?session=${current.id}`}>
               <div className={`${isBus ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"} rounded-2xl p-4 flex items-center justify-between shadow-md transition-colors cursor-pointer`}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
