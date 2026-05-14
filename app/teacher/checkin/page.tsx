@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ function StudentCheckinRow({ student, checked, onTap, tapping }: {
   );
 }
 
-export default function TeacherCheckinPage() {
+function TeacherCheckinContent() {
   const { user, role, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -224,5 +224,17 @@ export default function TeacherCheckinPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function TeacherCheckinPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      </div>
+    }>
+      <TeacherCheckinContent />
+    </Suspense>
   );
 }
