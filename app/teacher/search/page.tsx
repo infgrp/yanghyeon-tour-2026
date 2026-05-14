@@ -124,11 +124,13 @@ function StudentCard({ student }: { student: Student }) {
 }
 
 export default function TeacherSearchPage() {
-  const { user, role, loading } = useAuth();
+  const { user, appUser, role, loading } = useAuth();
   const router = useRouter();
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState("전체");
+  const [classFilter, setClassFilter] = useState("전체");
+  const [defaultSet, setDefaultSet] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -136,11 +138,20 @@ export default function TeacherSearchPage() {
     if (role && role !== "teacher" && role !== "admin") { router.replace("/"); return; }
   }, [user, role, loading, router]);
 
+  // 담임 학년/반 기본값 설정 (최초 1회)
+  useEffect(() => {
+    if (defaultSet || !appUser) return;
+    if (appUser.담임학년) setGradeFilter(String(appUser.담임학년));
+    if (appUser.담임반) setClassFilter(String(appUser.담임반));
+    setDefaultSet(true);
+  }, [appUser, defaultSet]);
+
   useEffect(() => { return subscribeStudents(setStudents); }, []);
 
   const filtered = useMemo(() => {
     let list = students;
     if (gradeFilter !== "전체") list = list.filter((s) => s.학년 === Number(gradeFilter));
+    if (classFilter !== "전체") list = list.filter((s) => s.반 === Number(classFilter));
     if (search.trim()) {
       const q = search.trim();
       list = list.filter((s) =>
@@ -149,7 +160,7 @@ export default function TeacherSearchPage() {
       );
     }
     return list.sort((a, b) => a.학년 - b.학년 || a.반 - b.반 || a.번호 - b.번호);
-  }, [students, search, gradeFilter]);
+  }, [students, search, gradeFilter, classFilter]);
 
   if (loading) {
     return (
@@ -162,7 +173,7 @@ export default function TeacherSearchPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-3 space-y-3">
+        <div className="max-w-2xl mx-auto px-4 py-3 space-y-2">
           <div className="flex items-center gap-3">
             <Link href="/teacher">
               <Button size="sm" variant="ghost" className="text-gray-500 p-1">
@@ -179,15 +190,30 @@ export default function TeacherSearchPage() {
               className="pl-9 border-gray-300 text-gray-900 bg-white" autoFocus />
           </div>
 
+          {/* 학년 필터 */}
           <div className="flex gap-1">
             {["전체", "1", "2", "3"].map((g) => (
-              <button key={g} onClick={() => setGradeFilter(g)}
+              <button key={g} onClick={() => { setGradeFilter(g); setClassFilter("전체"); }}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   gradeFilter === g
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                 }`}>
                 {g === "전체" ? "전체" : `${g}학년`}
+              </button>
+            ))}
+          </div>
+
+          {/* 반 필터 */}
+          <div className="flex flex-wrap gap-1">
+            {["전체", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].map((c) => (
+              <button key={c} onClick={() => setClassFilter(c)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  classFilter === c
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                }`}>
+                {c === "전체" ? "전체" : `${c}반`}
               </button>
             ))}
           </div>
