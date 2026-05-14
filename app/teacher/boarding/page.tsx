@@ -116,7 +116,7 @@ export default function BoardingPage() {
   useEffect(() => {
     if (!boardingSession) { setCheckins([]); return; }
     return subscribeSessionCheckins(boardingSession.id, setCheckins);
-  }, [boardingSession?.id]);
+  }, [boardingSession]);
 
   useEffect(() => {
     if (!boardingSession) return;

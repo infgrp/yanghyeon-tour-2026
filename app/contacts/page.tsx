@@ -21,8 +21,8 @@ export default function ContactsPage() {
 
   useEffect(() => {
     if (loading || !role) return;
-    const fetch = role === "admin" || role === "teacher" ? getAllContacts : getPublicContacts;
-    fetch().then((c) => { setContacts(c); setDataLoading(false); });
+    const loadContacts = role === "admin" || role === "teacher" ? getAllContacts : getPublicContacts;
+    loadContacts().then((c) => { setContacts(c); setDataLoading(false); });
   }, [loading, role]);
 
   const grouped = useMemo(() => {

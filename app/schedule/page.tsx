@@ -56,7 +56,7 @@ function ScheduleItem({ item, expanded }: { item: Schedule; expanded: boolean })
 }
 
 export default function SchedulePage() {
-  const { user, role, loading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [schedule, setSchedule] = useState<Schedule[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
