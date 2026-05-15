@@ -167,6 +167,86 @@ export const verifyTeacherCode = onCall(
   }
 );
 
+// ── Callable: 학생 학번 조회 (가입 전 미인증 호출 허용) ──────────
+// 학년·반·번호로 학생 doc을 찾고 이름·가입여부만 반환.
+// 개인정보 (연락처, 보호자, 건강정보)는 노출하지 않음.
+export const lookupStudent = onCall(
+  { region: "asia-northeast3" },
+  async (request) => {
+    const { 학년, 반, 번호 } = request.data as {
+      학년: number; 반: number; 번호: number;
+    };
+    if (!학년 || !반 || !번호) {
+      throw new HttpsError("invalid-argument", "학년·반·번호를 모두 입력해주세요.");
+    }
+    const studentId = `G${학년}-C${반}-N${번호}`;
+    const snap = await db.doc(`students/${studentId}`).get();
+    if (!snap.exists) {
+      return { found: false };
+    }
+    const data = snap.data() as { 이름?: string; uid?: string };
+    return {
+      found: true,
+      id: studentId,
+      이름: data.이름 ?? "",
+      가입됨: !!data.uid,
+    };
+  }
+);
+
+// ── Callable: 학생 가입 (Auth + users + students.uid) ────────────
+// 클라이언트가 createUserWithEmailAndPassword 후 호출.
+// students.uid 쓰기는 admin 권한 필요하므로 서버에서 처리.
+export const completeStudentRegistration = onCall(
+  { region: "asia-northeast3" },
+  async (request) => {
+    const callerUid = request.auth?.uid;
+    if (!callerUid) {
+      throw new HttpsError("unauthenticated", "로그인 필요.");
+    }
+
+    const { 학년, 반, 번호, privacyConsent } = request.data as {
+      학년: number; 반: number; 번호: number; privacyConsent: boolean;
+    };
+    if (!학년 || !반 || !번호) {
+      throw new HttpsError("invalid-argument", "학년·반·번호 누락.");
+    }
+    if (!privacyConsent) {
+      throw new HttpsError("invalid-argument", "개인정보 수집 동의 필요.");
+    }
+
+    const studentId = `G${학년}-C${반}-N${번호}`;
+    const studentRef = db.doc(`students/${studentId}`);
+    const userRef = db.doc(`users/${callerUid}`);
+
+    return await db.runTransaction(async (tx) => {
+      const studentSnap = await tx.get(studentRef);
+      if (!studentSnap.exists) {
+        throw new HttpsError("not-found", "해당 학번의 학생을 찾을 수 없습니다.");
+      }
+      const studentData = studentSnap.data() as { uid?: string; 이름?: string };
+      if (studentData.uid && studentData.uid !== callerUid) {
+        throw new HttpsError(
+          "already-exists",
+          "이미 가입된 학번입니다. 도용 의심 시 관리자에게 문의하세요."
+        );
+      }
+
+      // users/{uid} 문서 생성 (또는 기존 문서 업데이트)
+      tx.set(userRef, {
+        role: "student",
+        studentRef: `/students/${studentId}`,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+
+      // students/{id}.uid 업데이트
+      tx.update(studentRef, { uid: callerUid });
+
+      return { success: true, studentName: studentData.이름 ?? "" };
+    });
+  }
+);
+
 // ── FCM 푸시 알림 헬퍼 ────────────────────────────────────────
 async function collectFcmTokens(uids: string[]): Promise<{
   uidByToken: Map<string, string>;

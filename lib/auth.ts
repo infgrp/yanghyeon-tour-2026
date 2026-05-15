@@ -10,10 +10,10 @@ import {
   doc,
   getDoc,
   setDoc,
-  updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import { auth, db } from "./firebase";
+import { httpsCallable } from "firebase/functions";
+import { auth, db, functions } from "./firebase";
 import { AppUser, UserRole } from "@/types";
 
 // ── 역할 확인 (Custom Claims) ──────────────────────────────────
@@ -22,7 +22,25 @@ export async function getUserRole(user: User): Promise<UserRole | null> {
   return (idTokenResult.claims.role as UserRole) || null;
 }
 
+// ── 학생 학번 조회 (가입 전, Cloud Function callable 호출) ───
+export async function lookupStudent(학년: number, 반: number, 번호: number) {
+  const callable = httpsCallable<
+    { 학년: number; 반: number; 번호: number },
+    { found: boolean; id?: string; 이름?: string; 가입됨?: boolean }
+  >(functions, "lookupStudent");
+  const res = await callable({ 학년, 반, 번호 });
+  if (!res.data.found) return null;
+  return {
+    id: res.data.id!,
+    이름: res.data.이름 ?? "",
+    가입됨: !!res.data.가입됨,
+  };
+}
+
 // ── 학생 가입 ─────────────────────────────────────────────────
+//   1) Firebase Auth 가입
+//   2) Callable function 으로 users + students.uid 업데이트
+//      (students.uid 쓰기는 admin 권한 필요하므로 server-side 처리)
 export async function registerStudent(params: {
   학년: number;
   반: number;
@@ -31,49 +49,38 @@ export async function registerStudent(params: {
   password: string;
   privacyConsent: boolean;
 }): Promise<{ success: boolean; error?: string; studentName?: string }> {
-  const { 학년, 반, 번호, email, password } = params;
-  const studentId = `G${학년}-C${반}-N${번호}`;
+  const { 학년, 반, 번호, email, password, privacyConsent } = params;
 
-  // 1) 학생 존재 확인
-  const studentRef = doc(db, "students", studentId);
-  const studentSnap = await getDoc(studentRef);
-  if (!studentSnap.exists()) {
+  // 1) 사전 학번 확인 (callable lookup)
+  const found = await lookupStudent(학년, 반, 번호);
+  if (!found) {
     return { success: false, error: "해당 학번의 학생을 찾을 수 없습니다." };
   }
-  const studentData = studentSnap.data();
-
-  // 2) 이미 가입된 학번 방지
-  if (studentData.uid) {
+  if (found.가입됨) {
     return {
       success: false,
       error: "이미 가입된 학번입니다. 도용 의심 시 관리자에게 문의하세요.",
     };
   }
 
-  // 3) Firebase Auth 가입
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-  const uid = cred.user.uid;
+  // 2) Firebase Auth 가입 — 본인 인증 확보
+  await createUserWithEmailAndPassword(auth, email, password);
 
-  // 4) /users/{uid} 문서 생성
-  await setDoc(doc(db, "users", uid), {
-    role: "student",
-    studentRef: `/students/${studentId}`,
-    createdAt: serverTimestamp(),
-  });
+  // 3) Callable로 users 문서 생성 + students.uid 업데이트 (admin 권한)
+  const completeRegistration = httpsCallable<
+    { 학년: number; 반: number; 번호: number; privacyConsent: boolean },
+    { success: boolean; studentName: string }
+  >(functions, "completeStudentRegistration");
 
-  // 5) /students/{id}.uid 업데이트
-  await updateDoc(studentRef, { uid });
-
-  return { success: true, studentName: studentData.이름 };
-}
-
-// ── 학생 확인 (가입 전 이름 확인용) ──────────────────────────
-export async function lookupStudent(학년: number, 반: number, 번호: number) {
-  const studentId = `G${학년}-C${반}-N${번호}`;
-  const snap = await getDoc(doc(db, "students", studentId));
-  if (!snap.exists()) return null;
-  const data = snap.data();
-  return { id: studentId, 이름: data.이름, 가입됨: !!data.uid };
+  try {
+    const res = await completeRegistration({ 학년, 반, 번호, privacyConsent });
+    return { success: true, studentName: res.data.studentName };
+  } catch (err: unknown) {
+    // 가입 함수 실패 시 — 이미 만들어진 Auth 계정은 남지만
+    // 같은 이메일로 다시 시도 가능 (lookup 단계에서 가입됨 체크)
+    const msg = err instanceof Error ? err.message : "가입 완료 처리 실패";
+    return { success: false, error: msg };
+  }
 }
 
 // ── 교사 가입 ─────────────────────────────────────────────────

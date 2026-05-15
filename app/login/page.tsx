@@ -95,6 +95,10 @@ function StudentRegisterForm() {
 
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault();
+    if (!학년 || !반 || !번호) {
+      toast.error("학년·반·번호를 모두 입력해주세요.");
+      return;
+    }
     setBusy(true);
     try {
       const result = await lookupStudent(Number(학년), Number(반), Number(번호));
@@ -102,6 +106,14 @@ function StudentRegisterForm() {
       if (result.가입됨) { toast.error("이미 가입된 학번입니다. 본인이 맞다면 관리자에게 문의하세요."); return; }
       setFoundName(result.이름);
       setStep("confirm");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("lookupStudent error:", err);
+      if (msg.includes("not-found") || msg.includes("internal")) {
+        toast.error("학생 조회에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      } else {
+        toast.error("조회 실패: " + msg);
+      }
     } finally {
       setBusy(false);
     }
