@@ -75,6 +75,7 @@ export interface AppUser {
   이름?: string;
   담임학년?: number;
   담임반?: number;
+  fcmTokens?: string[]; // 푸시 알림용 (디바이스별 토큰 누적)
 }
 
 // ── CheckinSession ────────────────────────────────────────────
@@ -147,3 +148,42 @@ export type CheckinStatus =
   | "BOTH"
   | "MISSING"
   | "LOCKED";
+
+// ── Chat ──────────────────────────────────────────────────────
+// admin_teachers: 관리자·교사 양방향
+// class:          담임·관리자 → 반 학생들 일방향(공지)  — 학생은 읽기 전용
+export type ChatRoomType = "admin_teachers" | "class";
+
+export interface ChatRoom {
+  id: string;
+  type: ChatRoomType;
+  name: string;
+  members: string[];           // uid 배열 (읽기 권한)
+  학년?: number;               // class
+  반?: number;                 // class
+  lastMessage?: string;        // 최근 메시지 미리보기
+  lastMessageAt?: Timestamp;
+  lastSenderName?: string;
+  createdAt: Timestamp;
+}
+
+export interface ChatMessage {
+  id: string;
+  text: string;
+  senderUid: string;
+  senderName: string;
+  senderRole: UserRole;
+  timestamp: Timestamp;
+}
+
+// 채팅방별 사용자의 마지막 읽음 시각 (chat_rooms/{roomId}/reads/{uid})
+export interface ChatRoomRead {
+  id: string;            // = uid
+  uid: string;
+  lastReadAt: Timestamp;
+  name?: string;         // 표시용
+  role?: UserRole;
+  학년?: number;
+  반?: number;
+  번호?: number;
+}

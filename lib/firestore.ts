@@ -1,5 +1,6 @@
 import {
   collection,
+  collectionGroup,
   doc,
   getDoc,
   getDocs,
@@ -9,10 +10,13 @@ import {
   query,
   where,
   orderBy,
+  limit,
   onSnapshot,
   Timestamp,
   serverTimestamp,
   writeBatch,
+  arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type {
@@ -27,6 +31,10 @@ import type {
   GlobalSettings,
   SessionScope,
   AppUser,
+  ChatRoom,
+  ChatMessage,
+  ChatRoomRead,
+  UserRole,
 } from "@/types";
 
 // ── Students ──────────────────────────────────────────────────
@@ -302,6 +310,330 @@ export async function getTeachers(): Promise<AppUser[]> {
     query(collection(db, "users"), where("role", "==", "teacher"))
   );
   return snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUser));
+}
+
+// ── Chat ──────────────────────────────────────────────────────
+const CHAT_PREVIEW_LIMIT = 60;
+
+function classRoomId(학년: number, 반: number) {
+  return `class_G${학년}_C${반}`;
+}
+
+export function subscribeMyChatRooms(
+  uid: string,
+  cb: (rooms: ChatRoom[]) => void
+) {
+  const q = query(
+    collection(db, "chat_rooms"),
+    where("members", "array-contains", uid)
+  );
+  return onSnapshot(
+    q,
+    (snap) => {
+      const rooms = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ChatRoom));
+      rooms.sort((a, b) => {
+        const tA = a.lastMessageAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0;
+        const tB = b.lastMessageAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0;
+        return tB - tA;
+      });
+      cb(rooms);
+    },
+    () => { /* 로그아웃 등으로 권한 만료 시 조용히 무시 */ }
+  );
+}
+
+export async function getChatRoom(roomId: string): Promise<ChatRoom | null> {
+  const snap = await getDoc(doc(db, "chat_rooms", roomId));
+  return snap.exists() ? ({ id: snap.id, ...snap.data() } as ChatRoom) : null;
+}
+
+export function subscribeRoomMessages(
+  roomId: string,
+  cb: (msgs: ChatMessage[]) => void,
+  max = 200
+) {
+  const q = query(
+    collection(db, "chat_rooms", roomId, "messages"),
+    orderBy("timestamp", "desc"),
+    limit(max)
+  );
+  return onSnapshot(
+    q,
+    (snap) => {
+      const msgs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ChatMessage));
+      msgs.reverse(); // 화면 표시는 오래된 → 최신
+      cb(msgs);
+    },
+    () => { /* 로그아웃 등으로 권한 만료 시 조용히 무시 */ }
+  );
+}
+
+export async function sendChatMessage(params: {
+  roomId: string;
+  text: string;
+  sender: { uid: string; name: string; role: UserRole };
+}) {
+  if (params.sender.role === "student") {
+    throw new Error("학생은 메시지를 보낼 수 없습니다.");
+  }
+  const text = params.text.trim();
+  if (!text) return;
+  const now = Timestamp.now();
+  const msgRef = collection(db, "chat_rooms", params.roomId, "messages");
+  await addDoc(msgRef, {
+    text,
+    senderUid: params.sender.uid,
+    senderName: params.sender.name,
+    senderRole: params.sender.role,
+    timestamp: now,
+  });
+  const preview = text.length > CHAT_PREVIEW_LIMIT
+    ? text.slice(0, CHAT_PREVIEW_LIMIT) + "…"
+    : text;
+  await updateDoc(doc(db, "chat_rooms", params.roomId), {
+    lastMessage: preview,
+    lastMessageAt: now,
+    lastSenderName: params.sender.name,
+  });
+}
+
+// 관리자·교사 전체방 보장 (고정 ID)
+export async function ensureAdminTeacherRoom(myUid: string): Promise<string> {
+  const roomId = "admin_teachers";
+  const ref = doc(db, "chat_rooms", roomId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    const teachersSnap = await getDocs(
+      query(collection(db, "users"), where("role", "in", ["teacher", "admin"]))
+    );
+    const members = teachersSnap.docs.map((d) => d.id);
+    if (!members.includes(myUid)) members.push(myUid);
+    await setDoc(ref, {
+      type: "admin_teachers",
+      name: "관리자·교사 전체방",
+      members,
+      createdAt: Timestamp.now(),
+    });
+  } else {
+    const data = snap.data() as ChatRoom;
+    if (!data.members.includes(myUid)) {
+      await updateDoc(ref, { members: arrayUnion(myUid) });
+    }
+  }
+  return roomId;
+}
+
+// 반 그룹방 보장 (담임 + 반 학생들 + 관리자들)
+export async function ensureClassRoom(params: {
+  학년: number;
+  반: number;
+  myUid: string;
+}): Promise<string> {
+  const roomId = classRoomId(params.학년, params.반);
+  const ref = doc(db, "chat_rooms", roomId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    const [studentsSnap, teachersSnap] = await Promise.all([
+      getDocs(query(
+        collection(db, "students"),
+        where("학년", "==", params.학년),
+        where("반", "==", params.반)
+      )),
+      getDocs(query(collection(db, "users"), where("role", "in", ["teacher", "admin"]))),
+    ]);
+    const members = new Set<string>();
+    members.add(params.myUid);
+    studentsSnap.docs.forEach((d) => {
+      const uid = d.data().uid as string | undefined;
+      if (uid) members.add(uid);
+    });
+    // 담임 + 관리자
+    teachersSnap.docs.forEach((d) => {
+      const data = d.data() as AppUser;
+      if (data.role === "admin") members.add(d.id);
+      if (data.role === "teacher" && data.담임학년 === params.학년 && data.담임반 === params.반) {
+        members.add(d.id);
+      }
+    });
+    await setDoc(ref, {
+      type: "class",
+      name: `${params.학년}학년 ${params.반}반`,
+      members: Array.from(members),
+      학년: params.학년,
+      반: params.반,
+      createdAt: Timestamp.now(),
+    });
+  } else {
+    const data = snap.data() as ChatRoom;
+    if (!data.members.includes(params.myUid)) {
+      await updateDoc(ref, { members: arrayUnion(params.myUid) });
+    }
+  }
+  return roomId;
+}
+
+// ── Chat: 읽음 추적 ──────────────────────────────────────────
+// 사용자가 채팅방을 열거나 새 메시지를 본 시점에 호출 — lastReadAt 갱신
+export async function markRoomAsRead(params: {
+  roomId: string;
+  reader: {
+    uid: string;
+    name?: string;
+    role?: UserRole;
+    학년?: number;
+    반?: number;
+    번호?: number;
+  };
+}) {
+  const { roomId, reader } = params;
+  const ref = doc(db, "chat_rooms", roomId, "reads", reader.uid);
+  // undefined 필드 제거 (Firestore에서 undefined는 거부)
+  const data: Record<string, unknown> = {
+    uid: reader.uid,
+    lastReadAt: Timestamp.now(),
+  };
+  if (reader.name !== undefined) data.name = reader.name;
+  if (reader.role !== undefined) data.role = reader.role;
+  if (reader.학년 !== undefined) data.학년 = reader.학년;
+  if (reader.반 !== undefined) data.반 = reader.반;
+  if (reader.번호 !== undefined) data.번호 = reader.번호;
+  await setDoc(ref, data, { merge: true });
+}
+
+// 특정 방의 모든 사용자 lastReadAt 구독 (교사·관리자용 — 누가 읽었나 확인)
+export function subscribeRoomReads(
+  roomId: string,
+  cb: (reads: ChatRoomRead[]) => void
+) {
+  const ref = collection(db, "chat_rooms", roomId, "reads");
+  return onSnapshot(
+    ref,
+    (snap) =>
+      cb(snap.docs.map((d) => ({ id: d.id, ...d.data() } as ChatRoomRead))),
+    () => { /* 로그아웃 등 무시 */ }
+  );
+}
+
+// 내 모든 방의 lastReadAt 구독 (목록 페이지 안 읽음 배지용)
+//   collectionGroup("reads") 중 documentId == myUid 인 것만 가져옴.
+export function subscribeMyReads(
+  myUid: string,
+  cb: (readsByRoomId: Record<string, ChatRoomRead>) => void
+) {
+  const q = query(collectionGroup(db, "reads"), where("uid", "==", myUid));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const map: Record<string, ChatRoomRead> = {};
+      snap.docs.forEach((d) => {
+        // 경로: chat_rooms/{roomId}/reads/{uid}
+        const segs = d.ref.path.split("/");
+        const roomId = segs[1];
+        map[roomId] = { id: d.id, ...d.data() } as ChatRoomRead;
+      });
+      cb(map);
+    },
+    () => { /* 로그아웃 등 무시 */ }
+  );
+}
+
+// 사용자 진입 시 자동으로 본인이 속해야 할 방을 모두 ensure
+// 학생은 1:1 DM 없음 — 반별 공지방(읽기 전용)만 보장
+export async function autoEnsureRoomsForUser(appUser: AppUser): Promise<void> {
+  const uid = appUser.uid;
+
+  // 1) 교직원 전체방 (admin/teacher)
+  if (appUser.role === "admin" || appUser.role === "teacher") {
+    await ensureAdminTeacherRoom(uid).catch(() => {});
+  }
+
+  // 2) 담임이면 본인 반 그룹방
+  if (appUser.role === "teacher" && appUser.담임학년 && appUser.담임반) {
+    await ensureClassRoom({
+      학년: appUser.담임학년,
+      반: appUser.담임반,
+      myUid: uid,
+    }).catch(() => {});
+  }
+
+  // 3) 학생이면 본인 반 그룹방 (읽기 전용)
+  if (appUser.role === "student" && appUser.studentRef) {
+    const studentId = appUser.studentRef.split("/").pop()!;
+    const studentSnap = await getDoc(doc(db, "students", studentId)).catch(() => null);
+    if (!studentSnap || !studentSnap.exists()) return;
+    const student = { id: studentSnap.id, ...studentSnap.data() } as Student;
+
+    await ensureClassRoom({
+      학년: student.학년,
+      반: student.반,
+      myUid: uid,
+    }).catch(() => {});
+  }
+}
+
+// ── 관리자 일괄 공지 발송 ─────────────────────────────────────
+// 지정된 학년·반들의 그룹방에 동일한 메시지를 동시 발송.
+// 방이 없으면 ensureClassRoom으로 자동 생성한다.
+export async function broadcastAnnouncement(params: {
+  targets: { 학년: number; 반: number }[];        // 발송 대상 반 목록
+  text: string;
+  sender: { uid: string; name: string; role: UserRole };
+  alsoSendToAdminTeachers?: boolean;               // 교직원 방에도 사본 발송
+}): Promise<{ ok: number; failed: { 학년: number; 반: number }[] }> {
+  const text = params.text.trim();
+  if (!text) return { ok: 0, failed: [] };
+
+  let ok = 0;
+  const failed: { 학년: number; 반: number }[] = [];
+
+  for (const t of params.targets) {
+    try {
+      const roomId = await ensureClassRoom({
+        학년: t.학년,
+        반: t.반,
+        myUid: params.sender.uid,
+      });
+      await sendChatMessage({
+        roomId,
+        text,
+        sender: params.sender,
+      });
+      ok++;
+    } catch {
+      failed.push(t);
+    }
+  }
+
+  if (params.alsoSendToAdminTeachers) {
+    try {
+      const adminRoomId = await ensureAdminTeacherRoom(params.sender.uid);
+      await sendChatMessage({
+        roomId: adminRoomId,
+        text: `[전체 공지 발송됨]\n${text}`,
+        sender: params.sender,
+      });
+    } catch { /* 부수 알림은 실패해도 무시 */ }
+  }
+
+  return { ok, failed };
+}
+
+// ── FCM 토큰 ──────────────────────────────────────────────────
+export async function setUserFcmToken(uid: string, token: string) {
+  if (!token) return;
+  await updateDoc(doc(db, "users", uid), {
+    fcmTokens: arrayUnion(token),
+  }).catch(async () => {
+    // 문서가 일부 필드만 있는 경우 fallback (merge)
+    await setDoc(doc(db, "users", uid), { fcmTokens: [token] }, { merge: true });
+  });
+}
+
+export async function removeUserFcmToken(uid: string, token: string) {
+  if (!token) return;
+  await updateDoc(doc(db, "users", uid), {
+    fcmTokens: arrayRemove(token),
+  }).catch(() => { /* 문서 없거나 권한 없으면 무시 */ });
 }
 
 // ── Admin: 버스 인솔교사1 → 담임반 동기화 ─────────────────────

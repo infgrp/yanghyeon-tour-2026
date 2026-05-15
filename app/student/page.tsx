@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   User, Bus, Hotel, Plane, CheckCircle2, Clock, Phone,
-  AlertTriangle, LogOut, QrCode, Loader2, Calendar,
+  AlertTriangle, LogOut, QrCode, Loader2, Calendar, MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -171,7 +171,8 @@ export default function StudentPage() {
     router.replace("/login");
   }
 
-  if (loading || dataLoading) {
+  // user가 null이면 (로그아웃 직후 redirect 대기 중) render 가드
+  if (loading || dataLoading || !user) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
@@ -267,6 +268,15 @@ export default function StudentPage() {
               </div>
             </div>
           </Link>
+          <Link href="/chat" className="col-span-2">
+            <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 flex items-center gap-3 hover:border-amber-500 transition-colors">
+              <MessageCircle className="w-5 h-5 text-amber-400 shrink-0" />
+              <div>
+                <p className="text-sm font-medium">공지방</p>
+                <p className="text-xs text-slate-400">담임·관리자 선생님 공지 수신</p>
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* 진행 중 점호 */}
@@ -285,7 +295,7 @@ export default function StudentPage() {
                   key={s.id}
                   session={s}
                   student={student!}
-                  uid={user!.uid}
+                  uid={user.uid}
                   checkins={checkins}
                 />
               ))

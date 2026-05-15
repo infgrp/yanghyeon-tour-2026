@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ClipboardList, Search, AlertTriangle, LogOut, Loader2,
   Users, Clock, Plus, ChevronRight, XCircle, GraduationCap, Bus, Hotel, Calendar, Phone,
+  MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -248,7 +249,8 @@ export default function TeacherPage() {
     getStudents().then((s: Student[]) => setTotalStudents(s.length));
   }, []);
 
-  if (loading) {
+  // user가 null이면 (로그아웃 직후 redirect 대기 중) render 가드
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -272,7 +274,7 @@ export default function TeacherPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {user && <CreateSessionDialog uid={user.uid} />}
+            <CreateSessionDialog uid={user.uid} />
             <Button size="sm" variant="ghost"
               onClick={async () => { await signOut(); router.replace("/login"); }}
               className="text-gray-400 hover:text-gray-700">
@@ -365,6 +367,17 @@ export default function TeacherPage() {
               </CardContent>
             </Card>
           </Link>
+          <Link href="/chat">
+            <Card className="bg-white border-gray-200 shadow-sm hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
+              <CardContent className="pt-5 pb-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                  <MessageCircle className="w-5 h-5 text-amber-600" />
+                </div>
+                <p className="font-medium text-sm text-gray-900">채팅</p>
+                <p className="text-xs text-gray-400">교사·반·학생</p>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         <Card className="bg-white border-gray-200 shadow-sm">
@@ -385,7 +398,7 @@ export default function TeacherPage() {
               </div>
             ) : (
               sessions.map((s) => (
-                <SessionCard key={s.id} session={s} uid={user!.uid} totalStudents={totalStudents} />
+                <SessionCard key={s.id} session={s} uid={user.uid} totalStudents={totalStudents} />
               ))
             )}
           </CardContent>

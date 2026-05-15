@@ -16,6 +16,7 @@ import {
   Users, Upload, Settings, LogOut, Loader2, Shield, QrCode,
   AlertTriangle, CheckCircle2, Clock, ChevronRight, Key, Printer,
   ToggleLeft, ToggleRight, Plus, X, Search, GraduationCap, Timer, Bus, Calendar, Phone,
+  MessageCircle, Megaphone, Send,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -24,6 +25,7 @@ import {
   getStudents, getIncidents, subscribeOpenSessions,
   getSettings, updateSettings, resetStudentUid,
   getBuses, createManualSession, closeSession, extendSession, getTeachers,
+  broadcastAnnouncement,
 } from "@/lib/firestore";
 import { printBusQRs } from "@/lib/qr";
 import type {
@@ -214,6 +216,205 @@ function SessionCard({ session, onClose, onExtend }: {
   );
 }
 
+// ── Broadcast Announcement Dialog ────────────────────────────────
+function BroadcastDialog({ students }: { students: Student[] }) {
+  const { user, appUser, role } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [scope, setScope] = useState<"all" | "byGrade" | "selected">("all");
+  const [grade, setGrade] = useState<number | null>(null);
+  const [selectedClasses, setSelectedClasses] = useState<Set<string>>(new Set());
+  const [includeStaff, setIncludeStaff] = useState(true);
+  const [sending, setSending] = useState(false);
+
+  // 학생 데이터 기반 학년·반 그룹
+  const grades = Array.from(new Set(students.map((s) => s.학년))).sort((a, b) => a - b);
+  const classesByGrade = new Map<number, number[]>();
+  students.forEach((s) => {
+    const list = classesByGrade.get(s.학년) ?? [];
+    if (!list.includes(s.반)) list.push(s.반);
+    classesByGrade.set(s.학년, list);
+  });
+  classesByGrade.forEach((list) => list.sort((a, b) => a - b));
+
+  const allTargets = (() => {
+    const out: { 학년: number; 반: number }[] = [];
+    if (scope === "all") {
+      grades.forEach((g) => (classesByGrade.get(g) ?? []).forEach((c) => out.push({ 학년: g, 반: c })));
+    } else if (scope === "byGrade" && grade != null) {
+      (classesByGrade.get(grade) ?? []).forEach((c) => out.push({ 학년: grade, 반: c }));
+    } else if (scope === "selected") {
+      selectedClasses.forEach((key) => {
+        const [g, c] = key.split("-").map(Number);
+        out.push({ 학년: g, 반: c });
+      });
+    }
+    return out;
+  })();
+
+  function toggleClass(g: number, c: number) {
+    const key = `${g}-${c}`;
+    const next = new Set(selectedClasses);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    setSelectedClasses(next);
+  }
+
+  async function handleSend() {
+    if (!user || !appUser || !role || allTargets.length === 0 || !text.trim()) return;
+    setSending(true);
+    try {
+      const res = await broadcastAnnouncement({
+        targets: allTargets,
+        text: text.trim(),
+        sender: {
+          uid: user.uid,
+          name: appUser.이름 ?? "관리자",
+          role,
+        },
+        alsoSendToAdminTeachers: includeStaff,
+      });
+      if (res.failed.length === 0) {
+        toast.success(`${res.ok}개 반에 공지 발송됨`);
+      } else {
+        toast.warning(`발송 ${res.ok}건 / 실패 ${res.failed.length}건`);
+      }
+      setOpen(false);
+      setText("");
+      setSelectedClasses(new Set());
+    } catch {
+      toast.error("발송 실패");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={
+        <Card className="bg-white border-gray-200 shadow-sm hover:border-amber-400 hover:shadow-md transition-all cursor-pointer" />
+      }>
+        <CardContent className="py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center">
+              <Megaphone className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="font-medium text-sm text-gray-900">공지 일괄 발송</p>
+              <p className="text-xs text-gray-500">여러 반에 한 번에 메시지 전송</p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-gray-400" />
+        </CardContent>
+      </DialogTrigger>
+
+      <DialogContent className="bg-white border-gray-200 text-gray-900 max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-gray-900 flex items-center gap-2">
+            <Megaphone className="w-4 h-4 text-amber-600" />
+            공지 일괄 발송
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-1">
+          <div className="space-y-1.5">
+            <Label className="text-gray-700 text-sm">대상</Label>
+            <div className="flex gap-1.5 flex-wrap">
+              {([
+                ["all", "전체 반"],
+                ["byGrade", "특정 학년"],
+                ["selected", "반 직접 선택"],
+              ] as const).map(([val, label]) => (
+                <button key={val} type="button" onClick={() => setScope(val)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    scope === val
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                  }`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {scope === "byGrade" && (
+              <div className="flex gap-1.5 mt-2">
+                {grades.map((g) => (
+                  <button key={g} type="button" onClick={() => setGrade(g)}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                      grade === g
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                    }`}>
+                    {g}학년
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {scope === "selected" && (
+              <div className="space-y-2 mt-2 max-h-40 overflow-y-auto pr-1">
+                {grades.map((g) => (
+                  <div key={g}>
+                    <p className="text-[11px] text-gray-400 mb-1">{g}학년</p>
+                    <div className="flex flex-wrap gap-1">
+                      {(classesByGrade.get(g) ?? []).map((c) => {
+                        const key = `${g}-${c}`;
+                        const on = selectedClasses.has(key);
+                        return (
+                          <button key={key} type="button" onClick={() => toggleClass(g, c)}
+                            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                              on
+                                ? "bg-indigo-600 text-white border-indigo-600"
+                                : "bg-white text-gray-600 border-gray-300 hover:border-indigo-400"
+                            }`}>
+                            {c}반
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <p className="text-[11px] text-gray-500 mt-1">
+              발송 대상: <span className="font-semibold text-gray-700">{allTargets.length}개 반</span>
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-gray-700 text-sm">메시지</Label>
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="모든 학생에게 전달할 공지 내용을 입력하세요"
+              maxLength={500}
+              rows={5}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+            <p className="text-[10px] text-gray-400 text-right">{text.length}/500</p>
+          </div>
+
+          <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={includeStaff}
+              onChange={(e) => setIncludeStaff(e.target.checked)}
+              className="rounded border-gray-300" />
+            교직원 방에도 발송 사본 남기기
+          </label>
+
+          <Button className="w-full" onClick={handleSend}
+            disabled={sending || !text.trim() || allTargets.length === 0}>
+            {sending
+              ? <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              : <Send className="w-4 h-4 mr-2" />}
+            {allTargets.length}개 반에 발송
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Dashboard Tab ─────────────────────────────────────────────────
 function DashboardTab({ students, incidents, sessions, onPrintQR, printingQR }: {
   students: Student[]; incidents: Incident[]; sessions: CheckinSession[];
@@ -286,6 +487,25 @@ function DashboardTab({ students, incidents, sessions, onPrintQR, printingQR }: 
                 <div>
                   <p className="font-medium text-sm text-gray-900">비상 연락처</p>
                   <p className="text-xs text-gray-500">긴급 연락처 조회</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        <BroadcastDialog students={students} />
+
+        <Link href="/chat">
+          <Card className="bg-white border-gray-200 shadow-sm hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
+            <CardContent className="py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center">
+                  <MessageCircle className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm text-gray-900">채팅</p>
+                  <p className="text-xs text-gray-500">교사·반별·학생 메시지</p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-gray-400" />
@@ -719,7 +939,8 @@ export default function AdminPage() {
     }
   }
 
-  if (loading || dataLoading) {
+  // user가 null이면 (로그아웃 직후 redirect 대기 중) render 가드
+  if (loading || dataLoading || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
