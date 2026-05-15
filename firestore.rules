@@ -30,10 +30,12 @@ service cloud.firestore {
       // 조건:
       //   1) 인증된 사용자
       //   2) 기존 doc의 uid 필드가 비어있어야 함 (도용 방지)
+      //      Firebase rules에서 missing field 접근은 evaluation error 라
+      //      'in' 연산자 또는 .get() 으로 안전하게 체크해야 함.
       //   3) 변경되는 필드가 정확히 'uid' 하나뿐이어야 함
       //   4) uid 값이 본인 uid 와 일치
       allow update: if isAuth()
-                    && resource.data.uid == null
+                    && (!('uid' in resource.data) || resource.data.uid == null)
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid']);
     }
