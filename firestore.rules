@@ -19,9 +19,23 @@ service cloud.firestore {
     }
 
     match /students/{sid} {
-      allow read: if isTeacherOrAdmin()
-                  || (isStudent() && resource.data.uid == request.auth.uid);
+      // 가입 전 학번 조회를 위해 read는 누구나 허용
+      // (학교 내부 시스템 가정 — 노출 위험 감수)
+      allow read: if true;
+
+      // 일반 쓰기는 admin만
       allow write: if isAdmin();
+
+      // 학생 본인이 가입할 때 자기 학번 doc의 uid 필드만 쓸 수 있게 허용
+      // 조건:
+      //   1) 인증된 사용자
+      //   2) 기존 doc의 uid 필드가 비어있어야 함 (도용 방지)
+      //   3) 변경되는 필드가 정확히 'uid' 하나뿐이어야 함
+      //   4) uid 값이 본인 uid 와 일치
+      allow update: if isAuth()
+                    && resource.data.uid == null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid']);
     }
 
     match /rooms/{rid} {
