@@ -11,6 +11,11 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "./firebase";
 import { fetchAppUser } from "./auth";
 import { AppUser, UserRole } from "@/types";
+import {
+  requestAndRegisterFcmToken,
+  listenForegroundMessages,
+  notificationsSupported,
+} from "./messaging";
 
 interface AuthCtx {
   user: User | null;
@@ -49,6 +54,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return unsub;
   }, []);
+
+  // 로그인 직후 FCM 권한 요청·토큰 등록 (한 번만)
+  useEffect(() => {
+    if (!user || !notificationsSupported()) return;
+    requestAndRegisterFcmToken(user.uid).catch(() => {});
+  }, [user]);
+
+  // Foreground 메시지 리스너 — 페이지 활성화 상태에서 도착하는 알림 처리
+  useEffect(() => {
+    if (!user) return;
+    let cleanup: (() => void) | undefined;
+    listenForegroundMessages().then((unsub) => { cleanup = unsub; });
+    return () => { cleanup?.(); };
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ user, appUser, role, loading }}>
