@@ -22,7 +22,12 @@ export default function ContactsPage() {
   useEffect(() => {
     if (loading || !role) return;
     const loadContacts = role === "admin" || role === "teacher" ? getAllContacts : getPublicContacts;
-    loadContacts().then((c) => { setContacts(c); setDataLoading(false); });
+    loadContacts()
+      .then(setContacts)
+      .catch((err) => {
+        console.error("contacts load error:", err);
+      })
+      .finally(() => setDataLoading(false));
   }, [loading, role]);
 
   const grouped = useMemo(() => {

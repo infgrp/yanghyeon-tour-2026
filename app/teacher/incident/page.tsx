@@ -242,8 +242,20 @@ export default function TeacherIncidentPage() {
   }, [user, role, loading, router]);
 
   async function loadData() {
-    const [i, s] = await Promise.all([getIncidents(), getStudents()]);
-    setIncidents(i); setStudents(s); setDataLoading(false);
+    try {
+      const [i, s] = await Promise.all([getIncidents(), getStudents()]);
+      setIncidents(i); setStudents(s);
+    } catch (err) {
+      console.error("incident loadData error:", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("permission-denied") || msg.includes("Missing or insufficient")) {
+        toast.error("권한 오류입니다. 로그아웃 후 다시 로그인해주세요.");
+      } else {
+        toast.error("데이터 로드 실패: " + msg);
+      }
+    } finally {
+      setDataLoading(false);
+    }
   }
 
   useEffect(() => { loadData(); }, []);

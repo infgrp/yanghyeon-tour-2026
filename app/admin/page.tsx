@@ -917,11 +917,21 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([getStudents(), getIncidents()]).then(([s, i]) => {
-      setStudents(s);
-      setIncidents(i);
-      setDataLoading(false);
-    });
+    Promise.all([getStudents(), getIncidents()])
+      .then(([s, i]) => {
+        setStudents(s);
+        setIncidents(i);
+      })
+      .catch((err) => {
+        console.error("admin loadData error:", err);
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("permission-denied") || msg.includes("insufficient")) {
+          toast.error("권한 오류입니다. 로그아웃 후 다시 로그인해주세요.");
+        } else {
+          toast.error("데이터 로드 실패: " + msg);
+        }
+      })
+      .finally(() => setDataLoading(false));
     const unsub = subscribeOpenSessions(setSessions);
     return unsub;
   }, [user]);

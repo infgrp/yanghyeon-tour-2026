@@ -69,7 +69,10 @@ export default function SchedulePage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    getSchedule().then((s) => { setSchedule(s); setDataLoading(false); });
+    getSchedule()
+      .then(setSchedule)
+      .catch((err) => { console.error("schedule load error:", err); })
+      .finally(() => setDataLoading(false));
   }, []);
 
   const days = useMemo(

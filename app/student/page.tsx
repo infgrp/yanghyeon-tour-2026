@@ -144,16 +144,27 @@ export default function StudentPage() {
 
   const loadData = useCallback(async () => {
     if (!appUser?.studentRef || !user) return;
-    const studentId = appUser.studentRef.split("/").pop()!;
-    const [s, c, pubContacts] = await Promise.all([
-      getStudent(studentId),
-      getStudentTodayCheckins(appUser.studentRef),
-      getPublicContacts(),
-    ]);
-    setStudent(s);
-    setCheckins(c);
-    setContacts(pubContacts);
-    setDataLoading(false);
+    try {
+      const studentId = appUser.studentRef.split("/").pop()!;
+      const [s, c, pubContacts] = await Promise.all([
+        getStudent(studentId),
+        getStudentTodayCheckins(appUser.studentRef),
+        getPublicContacts(),
+      ]);
+      setStudent(s);
+      setCheckins(c);
+      setContacts(pubContacts);
+    } catch (err) {
+      console.error("student loadData error:", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("permission-denied") || msg.includes("insufficient")) {
+        toast.error("권한 오류입니다. 로그아웃 후 다시 로그인해주세요.");
+      } else {
+        toast.error("데이터 로드 실패: " + msg);
+      }
+    } finally {
+      setDataLoading(false);
+    }
   }, [appUser, user]);
 
   useEffect(() => {
