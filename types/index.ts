@@ -138,6 +138,9 @@ export interface GlobalSettings {
   enrollmentLocked: boolean;
   qrTokensActive: boolean;
   graceMinutes: number;
+  autoCheckinEnabled?: boolean; // 클라이언트 폴링 자동 점호 (Cloud Functions 미사용 시)
+  tripStartIso?: string;        // 예: "2026-05-26T00:00:00+09:00"
+  tripEndIso?: string;          // 예: "2026-05-29T23:59:59+09:00"
 }
 
 // ── UI helpers ────────────────────────────────────────────────

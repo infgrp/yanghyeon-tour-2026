@@ -27,6 +27,7 @@ import {
   getBuses, createManualSession, closeSession, extendSession, getTeachers,
   broadcastAnnouncement,
 } from "@/lib/firestore";
+import { useAutoCheckin } from "@/lib/use-auto-checkin";
 import { printBusQRs } from "@/lib/qr";
 import type {
   Student, Incident, CheckinSession, GlobalSettings, SessionScope, AppUser,
@@ -798,6 +799,16 @@ function SettingsTab({ students }: { students: Student[] }) {
     toast.success(next ? "QR 승차점호가 활성화되었습니다." : "QR 승차점호가 비활성화되었습니다.");
   }
 
+  async function toggleAutoCheckin() {
+    if (!settings) return;
+    const next = !settings.autoCheckinEnabled;
+    await updateSettings({ autoCheckinEnabled: next });
+    setSettings({ ...settings, autoCheckinEnabled: next });
+    toast.success(next
+      ? "자동 점호가 활성화되었습니다. (관리자 페이지가 열려있을 때 동작)"
+      : "자동 점호가 비활성화되었습니다.");
+  }
+
   const filteredStudents = students.filter(
     (s) => s.uid && (!resetSearch || s.이름.includes(resetSearch) || String(s.반).includes(resetSearch))
   );
@@ -853,6 +864,21 @@ function SettingsTab({ students }: { students: Student[] }) {
                 : <ToggleLeft className="w-9 h-9 text-gray-300" />}
             </button>
           </div>
+
+          <div className="flex items-center justify-between py-2 border-t border-gray-100">
+            <div>
+              <p className="text-sm text-gray-700">자동 점호 (Cloud Functions 미사용)</p>
+              <p className="text-xs text-gray-400">
+                일정표 시각이 되면 자동으로 점호 세션 생성. 관리자 페이지가
+                열려있을 때만 동작합니다.
+              </p>
+            </div>
+            <button onClick={toggleAutoCheckin}>
+              {settings?.autoCheckinEnabled
+                ? <ToggleRight className="w-9 h-9 text-blue-500" />
+                : <ToggleLeft className="w-9 h-9 text-gray-300" />}
+            </button>
+          </div>
         </CardContent>
       </Card>
 
@@ -897,6 +923,9 @@ function SettingsTab({ students }: { students: Student[] }) {
 }
 
 // ── Main ─────────────────────────────────────────────────────────
+const DEFAULT_TRIP_START = new Date("2026-05-26T00:00:00+09:00");
+const DEFAULT_TRIP_END = new Date("2026-05-29T23:59:59+09:00");
+
 export default function AdminPage() {
   const { user, role, loading } = useAuth();
   const router = useRouter();
@@ -906,6 +935,16 @@ export default function AdminPage() {
   const [sessions, setSessions] = useState<CheckinSession[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [printingQR, setPrintingQR] = useState(false);
+  const [globalSettings, setGlobalSettings] = useState<GlobalSettings | null>(null);
+
+  // 자동 점호 (클라이언트 폴링) — admin 페이지가 열려있을 때만 동작
+  useAutoCheckin({
+    uid: user?.uid,
+    enabled: !!globalSettings?.autoCheckinEnabled,
+    tripStart: globalSettings?.tripStartIso ? new Date(globalSettings.tripStartIso) : DEFAULT_TRIP_START,
+    tripEnd: globalSettings?.tripEndIso ? new Date(globalSettings.tripEndIso) : DEFAULT_TRIP_END,
+    graceMinutes: globalSettings?.graceMinutes ?? 30,
+  });
 
   useEffect(() => {
     if (loading) return;
@@ -917,10 +956,11 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([getStudents(), getIncidents()])
-      .then(([s, i]) => {
+    Promise.all([getStudents(), getIncidents(), getSettings()])
+      .then(([s, i, gs]) => {
         setStudents(s);
         setIncidents(i);
+        setGlobalSettings(gs);
       })
       .catch((err) => {
         console.error("admin loadData error:", err);
