@@ -148,6 +148,30 @@ export default function TeacherSearchPage() {
 
   useEffect(() => { return subscribeStudents(setStudents); }, []);
 
+  // 학생 데이터에 실제로 존재하는 학년 목록
+  const availableGrades = useMemo(() => {
+    return Array.from(new Set(students.map((s) => s.학년))).sort((a, b) => a - b);
+  }, [students]);
+
+  // 현재 선택된 학년에 존재하는 반 목록 + 각 반의 학생 수
+  const availableClasses = useMemo(() => {
+    const list = gradeFilter === "전체"
+      ? students
+      : students.filter((s) => s.학년 === Number(gradeFilter));
+    const counts = new Map<number, number>();
+    list.forEach((s) => counts.set(s.반, (counts.get(s.반) ?? 0) + 1));
+    return Array.from(counts.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([반, count]) => ({ 반, count }));
+  }, [students, gradeFilter]);
+
+  // 학년 변경 시 현재 classFilter가 새 학년에 존재하지 않으면 "전체"로 리셋
+  useEffect(() => {
+    if (classFilter === "전체") return;
+    const exists = availableClasses.some((c) => String(c.반) === classFilter);
+    if (!exists) setClassFilter("전체");
+  }, [availableClasses, classFilter]);
+
   const filtered = useMemo(() => {
     let list = students;
     if (gradeFilter !== "전체") list = list.filter((s) => s.학년 === Number(gradeFilter));
@@ -190,33 +214,54 @@ export default function TeacherSearchPage() {
               className="pl-9 border-gray-300 text-gray-900 bg-white" autoFocus />
           </div>
 
-          {/* 학년 필터 */}
+          {/* 학년 필터 — 학생 데이터에 존재하는 학년만 표시 */}
           <div className="flex gap-1">
-            {["전체", "1", "2", "3"].map((g) => (
-              <button key={g} onClick={() => { setGradeFilter(g); setClassFilter("전체"); }}
+            <button onClick={() => setGradeFilter("전체")}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                gradeFilter === "전체"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}>
+              전체
+            </button>
+            {availableGrades.map((g) => (
+              <button key={g} onClick={() => setGradeFilter(String(g))}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  gradeFilter === g
+                  gradeFilter === String(g)
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                 }`}>
-                {g === "전체" ? "전체" : `${g}학년`}
+                {g}학년
               </button>
             ))}
           </div>
 
-          {/* 반 필터 */}
-          <div className="flex flex-wrap gap-1">
-            {["전체", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].map((c) => (
-              <button key={c} onClick={() => setClassFilter(c)}
+          {/* 반 필터 — 현재 학년에 존재하는 반만 + 학생 수 표시 */}
+          {availableClasses.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              <button onClick={() => setClassFilter("전체")}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  classFilter === c
+                  classFilter === "전체"
                     ? "bg-indigo-600 text-white"
                     : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                 }`}>
-                {c === "전체" ? "전체" : `${c}반`}
+                전체
               </button>
-            ))}
-          </div>
+              {availableClasses.map(({ 반, count }) => (
+                <button key={반} onClick={() => setClassFilter(String(반))}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    classFilter === String(반)
+                      ? "bg-indigo-600 text-white"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  }`}>
+                  {반}반
+                  <span className={`ml-1 text-[10px] ${
+                    classFilter === String(반) ? "text-indigo-100" : "text-gray-400"
+                  }`}>{count}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </header>
 

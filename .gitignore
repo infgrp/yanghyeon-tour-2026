@@ -34,3 +34,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# firebase
+serviceAccountKey.json
+*-service-account*.json
+.firebase/
+.firebaserc.local
+firebase-debug.log
+firestore-debug.log
+
+# functions (cloud functions)
+functions/node_modules/
+functions/lib/
+functions/.runtimeconfig.json
+
