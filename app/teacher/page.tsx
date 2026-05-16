@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FadeStaggerContainer, FadeStaggerItem } from "@/components/motion-presets";
+import { SkeletonCard } from "@/components/ui/skeleton";
 
 
 function timeLeft(session: CheckinSession): string {
@@ -252,15 +254,29 @@ export default function TeacherPage() {
   // user가 null이면 (로그아웃 직후 redirect 대기 중) render 가드
   if (loading || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
+        <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-sky-100 shadow-sm">
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
+              <GraduationCap className="w-4 h-4 text-blue-600" />
+            </div>
+            <span className="font-bold text-sm text-gray-900">교사 포털</span>
+          </div>
+        </header>
+        <main className="max-w-2xl mx-auto px-4 py-5 space-y-4">
+          <SkeletonCard />
+          <div className="grid grid-cols-2 gap-3">
+            <SkeletonCard /><SkeletonCard />
+          </div>
+          <SkeletonCard />
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
+      <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-sky-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -284,13 +300,13 @@ export default function TeacherPage() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-5 space-y-5">
+      <FadeStaggerContainer className="max-w-2xl mx-auto px-4 py-5 space-y-5">
         {/* 내 반 점호 현황 — 진행 중인 세션이 있고 담임반이 설정된 경우에만 표시 */}
         {appUser?.담임반 && sessions.length > 0 && (() => {
           const current = sessions[0];
           const isBus = current.type === "승차점호";
           return (
-            <Link href={isBus ? "/teacher/boarding" : `/teacher/checkin?session=${current.id}`}>
+            <FadeStaggerItem><Link href={isBus ? "/teacher/boarding" : `/teacher/checkin?session=${current.id}`}>
               <div className={`${isBus ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"} rounded-2xl p-4 flex items-center justify-between shadow-md transition-colors cursor-pointer`}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -307,11 +323,11 @@ export default function TeacherPage() {
                 </div>
                 <ChevronRight className="w-5 h-5 text-white/80" />
               </div>
-            </Link>
+            </Link></FadeStaggerItem>
           );
         })()}
 
-        <div className="grid grid-cols-2 gap-3">
+        <FadeStaggerItem><div className="grid grid-cols-2 gap-3">
           <Link href="/teacher/search">
             <Card className="bg-white border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">
               <CardContent className="pt-5 pb-4 flex flex-col items-center gap-2">
@@ -378,9 +394,9 @@ export default function TeacherPage() {
               </CardContent>
             </Card>
           </Link>
-        </div>
+        </div></FadeStaggerItem>
 
-        <Card className="bg-white border-gray-200 shadow-sm">
+        <FadeStaggerItem><Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2 text-gray-900">
@@ -402,10 +418,10 @@ export default function TeacherPage() {
               ))
             )}
           </CardContent>
-        </Card>
+        </Card></FadeStaggerItem>
 
         {sessions.length > 0 && (
-          <Link href={`/teacher/checkin?session=${sessions[0].id}`}>
+          <FadeStaggerItem><Link href={`/teacher/checkin?session=${sessions[0].id}`}>
             <Card className="bg-white border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">
               <CardContent className="py-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -415,9 +431,9 @@ export default function TeacherPage() {
                 <ChevronRight className="w-4 h-4 text-gray-400" />
               </CardContent>
             </Card>
-          </Link>
+          </Link></FadeStaggerItem>
         )}
-      </main>
+      </FadeStaggerContainer>
     </div>
   );
 }

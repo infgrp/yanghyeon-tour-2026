@@ -28,6 +28,9 @@ import {
   broadcastAnnouncement,
 } from "@/lib/firestore";
 import { useAutoCheckin } from "@/lib/use-auto-checkin";
+import { FadeStaggerContainer, FadeStaggerItem } from "@/components/motion-presets";
+import { SkeletonCard } from "@/components/ui/skeleton";
+import { EnrollmentCharts, ClassDistribution } from "@/components/dashboard-charts";
 import { printBusQRs } from "@/lib/qr";
 import type {
   Student, Incident, CheckinSession, GlobalSettings, SessionScope, AppUser,
@@ -425,8 +428,8 @@ function DashboardTab({ students, incidents, sessions, onPrintQR, printingQR }: 
   const openIncidents = incidents.filter((i) => !i.종결여부).length;
 
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-3">
+    <FadeStaggerContainer className="space-y-5">
+      <FadeStaggerItem><div className="grid grid-cols-2 gap-3">
         <StatCard label="전체 학생" value={students.length} sub={`가입 ${registered}명`}
           color="text-blue-600" bg="bg-blue-50" icon={Users} />
         <StatCard label="진행 중 점호" value={sessions.length} sub="활성 세션"
@@ -436,10 +439,18 @@ function DashboardTab({ students, incidents, sessions, onPrintQR, printingQR }: 
           bg={openIncidents > 0 ? "bg-red-50" : "bg-gray-50"} icon={AlertTriangle} />
         <StatCard label="전체 사건" value={incidents.length} sub="누적"
           color="text-gray-500" bg="bg-gray-100" icon={CheckCircle2} />
-      </div>
+      </div></FadeStaggerItem>
+
+      {/* 차트 섹션 — 가입률 + 학년별 + 반별 분포 */}
+      <FadeStaggerItem>
+        <EnrollmentCharts students={students} />
+      </FadeStaggerItem>
+      <FadeStaggerItem>
+        <ClassDistribution students={students} />
+      </FadeStaggerItem>
 
       {sessions.length > 0 && (
-        <div>
+        <FadeStaggerItem><div>
           <p className="text-sm font-semibold text-gray-700 mb-2">진행 중인 점호</p>
           <div className="space-y-2">
             {sessions.slice(0, 2).map((s) => {
@@ -455,10 +466,10 @@ function DashboardTab({ students, incidents, sessions, onPrintQR, printingQR }: 
               );
             })}
           </div>
-        </div>
+        </div></FadeStaggerItem>
       )}
 
-      <div className="space-y-2">
+      <FadeStaggerItem><div className="space-y-2">
         <p className="text-sm font-semibold text-gray-700">바로가기</p>
 
         <Link href="/schedule">
@@ -602,8 +613,8 @@ function DashboardTab({ students, incidents, sessions, onPrintQR, printingQR }: 
             </CardContent>
           </Card>
         </Link>
-      </div>
-    </div>
+      </div></FadeStaggerItem>
+    </FadeStaggerContainer>
   );
 }
 
@@ -992,8 +1003,22 @@ export default function AdminPage() {
   // user가 null이면 (로그아웃 직후 redirect 대기 중) render 가드
   if (loading || dataLoading || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
+        <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-sky-100 shadow-sm">
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-2">
+            <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center">
+              <Shield className="w-4 h-4 text-red-600" />
+            </div>
+            <span className="font-bold text-sm text-gray-900">관리자</span>
+          </div>
+        </header>
+        <main className="max-w-2xl mx-auto px-4 py-5 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
+          </div>
+          <SkeletonCard />
+          <SkeletonCard />
+        </main>
       </div>
     );
   }
@@ -1001,8 +1026,8 @@ export default function AdminPage() {
   const openSessionCount = sessions.length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
+      <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-sky-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center">

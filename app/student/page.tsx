@@ -16,6 +16,8 @@ import { useAuth } from "@/lib/auth-context";
 import { signOut } from "@/lib/auth";
 import { getStudent, subscribeOpenSessions, getStudentTodayCheckins, createCheckin, getPublicContacts } from "@/lib/firestore";
 import type { Student, CheckinSession, Checkin, Contact } from "@/types";
+import { FadeStaggerContainer, FadeStaggerItem } from "@/components/motion-presets";
+import { StudentPageSkeleton } from "@/components/ui/skeleton";
 
 function sessionApplies(session: CheckinSession, student: Student): boolean {
   const scope = session.scope;
@@ -191,8 +193,20 @@ export default function StudentPage() {
 
   if (loading || dataLoading || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-sky-400" />
+      <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
+        <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-sky-100 shadow-sm">
+          <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
+                <User className="w-4 h-4 text-blue-600" />
+              </div>
+              <span className="font-bold text-sm text-gray-900">학생 포털</span>
+            </div>
+          </div>
+        </header>
+        <main className="max-w-lg mx-auto px-4 py-5">
+          <StudentPageSkeleton />
+        </main>
       </div>
     );
   }
@@ -229,10 +243,10 @@ export default function StudentPage() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-5 space-y-4">
+      <FadeStaggerContainer className="max-w-lg mx-auto px-4 py-5 space-y-4">
         {/* 내 정보 */}
         {student && (
-          <Card className="border-blue-100 shadow-sm overflow-hidden">
+          <FadeStaggerItem><Card className="border-blue-100 shadow-sm overflow-hidden">
             <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 px-5 py-4 text-white">
               <div className="flex items-end justify-between">
                 <div>
@@ -272,11 +286,11 @@ export default function StudentPage() {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </Card></FadeStaggerItem>
         )}
 
         {/* 바로가기 */}
-        <div className="grid grid-cols-2 gap-3">
+        <FadeStaggerItem><div className="grid grid-cols-2 gap-3">
           <Link href="/schedule">
             <div className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm hover:border-blue-300 hover:shadow-md transition-all">
               <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
@@ -310,10 +324,10 @@ export default function StudentPage() {
               </div>
             </div>
           </Link>
-        </div>
+        </div></FadeStaggerItem>
 
         {/* 진행 중 점호 */}
-        <Card className="bg-white border-gray-200 shadow-sm">
+        <FadeStaggerItem><Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2 text-gray-900">
               <Clock className="w-4 h-4 text-amber-500" /> 진행 중인 점호
@@ -334,10 +348,10 @@ export default function StudentPage() {
               ))
             )}
           </CardContent>
-        </Card>
+        </Card></FadeStaggerItem>
 
         {/* 오늘 점호 이력 */}
-        <Card className="bg-white border-gray-200 shadow-sm">
+        <FadeStaggerItem><Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2 text-gray-900">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" /> 오늘 점호 이력
@@ -365,11 +379,11 @@ export default function StudentPage() {
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card></FadeStaggerItem>
 
         {/* 비상 연락처 */}
         {contacts.length > 0 && (
-          <Card className="bg-white border-gray-200 shadow-sm">
+          <FadeStaggerItem><Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2 text-gray-900">
                 <Phone className="w-4 h-4 text-emerald-500" /> 비상 연락처
@@ -397,11 +411,11 @@ export default function StudentPage() {
                 </div>
               ))}
             </CardContent>
-          </Card>
+          </Card></FadeStaggerItem>
         )}
 
         {/* SOS */}
-        <div className="pb-4 pt-2">
+        <FadeStaggerItem><div className="pb-4 pt-2">
           <a href="tel:119">
             <Button className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold py-6 text-lg shadow-lg shadow-red-200">
               <AlertTriangle className="w-5 h-5 mr-2" />
@@ -411,8 +425,8 @@ export default function StudentPage() {
           <p className="text-center text-xs text-gray-400 mt-2">
             위급 상황 시 즉시 인솔 선생님께 연락하세요.
           </p>
-        </div>
-      </main>
+        </div></FadeStaggerItem>
+      </FadeStaggerContainer>
     </div>
   );
 }
