@@ -62,16 +62,16 @@ function LoginForm() {
   return (
     <form onSubmit={handleLogin} className="space-y-4">
       <div className="space-y-2">
-        <Label className="text-sky-100 font-medium">이메일</Label>
+        <Label className="text-slate-700 font-medium">이메일</Label>
         <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
           placeholder="example@school.kr"
-          className="bg-white/80 border-sky-200 text-slate-800 placeholder:text-slate-400" required />
+          className="bg-white border-blue-200 text-slate-800 placeholder:text-slate-400 focus-visible:border-blue-400" required />
       </div>
       <div className="space-y-2">
-        <Label className="text-sky-100 font-medium">비밀번호</Label>
+        <Label className="text-slate-700 font-medium">비밀번호</Label>
         <PwInput value={pw} onChange={setPw} />
       </div>
-      <Button type="submit" className="w-full" disabled={busy}>
+      <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={busy}>
         {busy ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
         로그인
       </Button>
@@ -144,14 +144,14 @@ function StudentRegisterForm() {
 
   if (step === "lookup") return (
     <form onSubmit={handleLookup} className="space-y-4">
-      <p className="text-sm text-sky-200/70">학년·반·번호를 입력하면 이름을 확인합니다.</p>
+      <p className="text-sm text-slate-600">학년·반·번호를 입력하면 이름을 확인합니다.</p>
       <div className="grid grid-cols-3 gap-2">
         {[["학년", 학년, set학년], ["반", 반, set반], ["번호", 번호, set번호]].map(([label, val, setter]) => (
           <div key={String(label)} className="space-y-1">
-            <Label className="text-sky-100 font-medium text-xs">{String(label)}</Label>
+            <Label className="text-slate-700 font-medium text-xs">{String(label)}</Label>
             <Input type="number" min={1} value={String(val)}
               onChange={(e) => (setter as (v: string) => void)(e.target.value)}
-              className="bg-slate-800 border-slate-600 text-slate-100 text-center" required />
+              className="bg-white border-blue-200 text-slate-800 text-center font-semibold focus-visible:border-blue-400" required />
           </div>
         ))}
       </div>
@@ -163,36 +163,36 @@ function StudentRegisterForm() {
 
   if (step === "confirm") return (
     <div className="space-y-4">
-      <div className="bg-blue-900/40 border border-blue-700 rounded-lg p-4 text-center">
-        <p className="text-sky-200/80 text-sm mb-1">{학년}학년 {반}반 {번호}번</p>
-        <p className="text-xl font-bold text-white">{foundName}</p>
-        <p className="text-sky-200/80 text-sm mt-1">학생이 맞습니까?</p>
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 text-center">
+        <p className="text-slate-500 text-sm mb-1">{학년}학년 {반}반 {번호}번</p>
+        <p className="text-2xl font-bold text-slate-900">{foundName}</p>
+        <p className="text-slate-500 text-sm mt-1">학생이 맞습니까?</p>
       </div>
       <div className="flex gap-2">
-        <Button variant="outline" className="flex-1 border-slate-600 text-slate-300"
+        <Button variant="outline" className="flex-1 border-slate-300 text-slate-600"
           onClick={() => setStep("lookup")}>아니오</Button>
-        <Button className="flex-1" onClick={() => setStep("register")}>예, 맞습니다</Button>
+        <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setStep("register")}>예, 맞습니다</Button>
       </div>
     </div>
   );
 
   return (
     <form onSubmit={handleRegister} className="space-y-4">
-      <div className="bg-slate-800/60 rounded-lg p-3 text-sm text-center">
-        <span className="text-sky-200/70">{학년}학년 {반}반 {번호}번 </span>
-        <span className="font-bold">{foundName}</span>
+      <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm text-center text-slate-700">
+        <span className="text-slate-500">{학년}학년 {반}반 {번호}번 </span>
+        <span className="font-bold text-slate-900">{foundName}</span>
       </div>
       <div className="space-y-2">
-        <Label className="text-sky-100 font-medium">이메일</Label>
+        <Label className="text-slate-700 font-medium">이메일</Label>
         <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-          className="bg-white/80 border-sky-200 text-slate-800 placeholder:text-slate-400" required />
+          className="bg-white border-blue-200 text-slate-800 placeholder:text-slate-400 focus-visible:border-blue-400" required />
       </div>
       <div className="space-y-2">
-        <Label className="text-sky-100 font-medium">비밀번호 (6자 이상)</Label>
+        <Label className="text-slate-700 font-medium">비밀번호 (6자 이상)</Label>
         <PwInput value={pw} onChange={setPw} />
       </div>
       <div className="space-y-2">
-        <Label className="text-sky-100 font-medium">비밀번호 확인</Label>
+        <Label className="text-slate-700 font-medium">비밀번호 확인</Label>
         <PwInput value={pwConfirm} onChange={setPwConfirm} placeholder="비밀번호 확인" />
         {pwConfirm && pw !== pwConfirm && (
           <p className="text-xs text-red-300">비밀번호가 일치하지 않습니다.</p>
@@ -201,15 +201,15 @@ function StudentRegisterForm() {
       <label className="flex items-start gap-2 cursor-pointer">
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)}
           className="mt-1 accent-blue-500" />
-        <span className="text-xs text-sky-100/70">
+        <span className="text-xs text-slate-600">
           개인정보 수집·이용 및 Firebase(Google) 서버 저장에 동의합니다.
           수집 항목: 이메일, 학년·반·번호, 이름. 보존 기간: 행사 종료 후 90일.
         </span>
       </label>
       <div className="flex gap-2">
-        <Button type="button" variant="outline" className="border-slate-600 text-slate-300"
+        <Button type="button" variant="outline" className="border-slate-300 text-slate-600"
           onClick={() => setStep("confirm")}>이전</Button>
-        <Button type="submit" className="flex-1" disabled={busy}>
+        <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" disabled={busy}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}가입 완료
         </Button>
       </div>
@@ -262,41 +262,41 @@ function TeacherRegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label className="text-sky-100 font-medium">교사 가입 코드</Label>
+        <Label className="text-slate-700 font-medium">교사 가입 코드</Label>
         <Input value={code} onChange={(e) => setCode(e.target.value)}
           placeholder="담당 선생님께 받은 코드 입력"
-          className="bg-white/80 border-sky-200 text-slate-800 placeholder:text-slate-400" required />
+          className="bg-white border-blue-200 text-slate-800 placeholder:text-slate-400 focus-visible:border-blue-400" required />
       </div>
       <div className="space-y-2">
-        <Label className="text-sky-100 font-medium">이름</Label>
+        <Label className="text-slate-700 font-medium">이름</Label>
         <Input value={이름} onChange={(e) => set이름(e.target.value)}
-          className="bg-white/80 border-sky-200 text-slate-800 placeholder:text-slate-400" required />
+          className="bg-white border-blue-200 text-slate-800 placeholder:text-slate-400 focus-visible:border-blue-400" required />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
-          <Label className="text-sky-100 font-medium text-xs">담임 학년 (없으면 비워둠)</Label>
+          <Label className="text-slate-700 font-medium text-xs">담임 학년 (없으면 비워둠)</Label>
           <Input type="number" min={1} max={3} value={담임학년}
             onChange={(e) => set담임학년(e.target.value)}
-            className="bg-white/80 border-sky-200 text-slate-800 placeholder:text-slate-400" />
+            className="bg-white border-blue-200 text-slate-800 placeholder:text-slate-400 focus-visible:border-blue-400" />
         </div>
         <div className="space-y-1">
-          <Label className="text-sky-100 font-medium text-xs">담임 반</Label>
+          <Label className="text-slate-700 font-medium text-xs">담임 반</Label>
           <Input type="number" min={1} value={담임반}
             onChange={(e) => set담임반(e.target.value)}
-            className="bg-white/80 border-sky-200 text-slate-800 placeholder:text-slate-400" />
+            className="bg-white border-blue-200 text-slate-800 placeholder:text-slate-400 focus-visible:border-blue-400" />
         </div>
       </div>
       <div className="space-y-2">
-        <Label className="text-sky-100 font-medium">이메일</Label>
+        <Label className="text-slate-700 font-medium">이메일</Label>
         <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-          className="bg-white/80 border-sky-200 text-slate-800 placeholder:text-slate-400" required />
+          className="bg-white border-blue-200 text-slate-800 placeholder:text-slate-400 focus-visible:border-blue-400" required />
       </div>
       <div className="space-y-2">
-        <Label className="text-sky-100 font-medium">비밀번호 (6자 이상)</Label>
+        <Label className="text-slate-700 font-medium">비밀번호 (6자 이상)</Label>
         <PwInput value={pw} onChange={setPw} />
       </div>
       <div className="space-y-2">
-        <Label className="text-sky-100 font-medium">비밀번호 확인</Label>
+        <Label className="text-slate-700 font-medium">비밀번호 확인</Label>
         <PwInput value={pwConfirm} onChange={setPwConfirm} placeholder="비밀번호 확인" />
         {pwConfirm && pw !== pwConfirm && (
           <p className="text-xs text-red-300">비밀번호가 일치하지 않습니다.</p>
@@ -309,7 +309,7 @@ function TeacherRegisterForm() {
           개인정보 수집·이용 및 Firebase(Google) 서버 저장에 동의합니다.
         </span>
       </label>
-      <Button type="submit" className="w-full" disabled={busy}>
+      <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={busy}>
         {busy ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}교사 가입
       </Button>
     </form>
@@ -321,19 +321,21 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden"
       style={{
-        background: "linear-gradient(160deg, #1e3a5f 0%, #1e5f8f 50%, #1a7aa0 100%)",
+        background: "linear-gradient(160deg, #e0f2fe 0%, #dbeafe 50%, #ede9fe 100%)",
       }}
     >
-      {/* 배경 장식 */}
+      {/* 배경 장식 — 밝은 톤 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-15"
-          style={{ background: "radial-gradient(circle, #7dd3fc, transparent)" }} />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full opacity-10"
-          style={{ background: "radial-gradient(circle, #38bdf8, transparent)" }} />
+        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-40"
+          style={{ background: "radial-gradient(circle, #93c5fd, transparent 70%)" }} />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full opacity-30"
+          style={{ background: "radial-gradient(circle, #c4b5fd, transparent 70%)" }} />
+        <div className="absolute top-1/3 left-1/4 w-72 h-72 rounded-full opacity-25"
+          style={{ background: "radial-gradient(circle, #fde68a, transparent 70%)" }} />
       </div>
 
       <div className="w-full max-w-sm space-y-5 relative z-10">
-        <Link href="/" className="flex items-center gap-1 text-blue-300/70 text-sm hover:text-blue-200 transition-colors">
+        <Link href="/" className="flex items-center gap-1 text-blue-700/70 text-sm hover:text-blue-800 transition-colors">
           <ArrowLeft className="w-4 h-4" /> 홈으로
         </Link>
 
@@ -395,29 +397,27 @@ export default function LoginPage() {
               <rect x="252" y="67" width="12" height="14" rx="1.5" fill="none" stroke="#60a5fa" strokeWidth="0.7" opacity="0.4" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight drop-shadow">양현고 수학여행</h1>
-          <p className="text-sky-200/90 text-sm font-medium">2026. 5. 26 (화) ~ 29 (금) · 제주</p>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">양현고 수학여행</h1>
+          <p className="text-slate-600 text-sm font-medium">2026. 5. 26 (화) ~ 29 (금) · 제주</p>
         </div>
 
-        {/* 카드 */}
-        <div className="rounded-2xl overflow-hidden shadow-xl"
-          style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.25)" }}
+        {/* 카드 — 밝은 글래스모피즘 */}
+        <div className="rounded-2xl overflow-hidden shadow-xl shadow-blue-200/50"
+          style={{ background: "rgba(255,255,255,0.75)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.6)" }}
         >
           <div className="p-6">
             <Tabs defaultValue="login">
-              <TabsList className="w-full mb-5 rounded-xl p-1"
-                style={{ background: "rgba(14, 165, 233, 0.15)" }}
-              >
+              <TabsList className="w-full mb-5 rounded-xl p-1 bg-blue-50/80">
                 <TabsTrigger value="login"
-                  className="flex-1 rounded-lg text-sky-200 data-[state=active]:bg-sky-500 data-[state=active]:text-white transition-all font-medium">
+                  className="flex-1 rounded-lg text-slate-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all font-medium">
                   로그인
                 </TabsTrigger>
                 <TabsTrigger value="student"
-                  className="flex-1 rounded-lg text-sky-200 data-[state=active]:bg-sky-500 data-[state=active]:text-white transition-all font-medium">
+                  className="flex-1 rounded-lg text-slate-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all font-medium">
                   학생 가입
                 </TabsTrigger>
                 <TabsTrigger value="teacher"
-                  className="flex-1 rounded-lg text-sky-200 data-[state=active]:bg-sky-500 data-[state=active]:text-white transition-all font-medium">
+                  className="flex-1 rounded-lg text-slate-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all font-medium">
                   교사 가입
                 </TabsTrigger>
               </TabsList>
@@ -428,7 +428,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-sky-700/50 pb-2">
+        <p className="text-center text-xs text-slate-500/80 pb-2">
           양현고등학교 · 2026 수학여행 안전 관리 시스템
         </p>
       </div>

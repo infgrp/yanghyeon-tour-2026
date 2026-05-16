@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   User, Bus, Hotel, Plane, CheckCircle2, Clock, Phone,
-  AlertTriangle, LogOut, QrCode, Loader2, Calendar, MessageCircle,
+  AlertTriangle, LogOut, QrCode, Loader2, Calendar, MessageCircle, Heart,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -64,7 +64,7 @@ function CheckinCard({
   const isBus = session.type === "승차점호";
 
   async function handleSelfTap() {
-    if (isBus) return; // 승차점호는 QR 스캔으로만
+    if (isBus) return;
     setBusy(true);
     try {
       await createCheckin({
@@ -82,39 +82,46 @@ function CheckinCard({
   }
 
   return (
-    <div className="border border-slate-700 rounded-xl p-4 space-y-3">
+    <div className={`border rounded-2xl p-4 space-y-3 transition-colors ${
+      alreadyChecked
+        ? "border-green-200 bg-green-50/40"
+        : "border-amber-200 bg-amber-50/40"
+    }`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="font-semibold text-sm">{session.name}</p>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="font-semibold text-sm text-gray-900">{session.name}</p>
+          <p className="text-xs text-gray-500 mt-0.5">
             {session.type} · {session.scope}
           </p>
         </div>
         <Badge
           variant="outline"
           className={alreadyChecked
-            ? "border-green-500 text-green-400"
-            : "border-amber-500 text-amber-400"}
+            ? "border-green-400 text-green-600 bg-white"
+            : "border-amber-400 text-amber-600 bg-white"}
         >
           {alreadyChecked ? "완료" : remaining}
         </Badge>
       </div>
 
       {alreadyChecked ? (
-        <div className="flex items-center gap-2 text-green-400 text-sm">
+        <div className="flex items-center gap-2 text-green-600 text-sm">
           <CheckCircle2 className="w-4 h-4" />
-          <span>점호 완료되었습니다.</span>
+          <span>점호가 완료되었습니다.</span>
         </div>
       ) : isBus ? (
         <Link href="/student/qr">
-          <Button className="w-full" variant="outline">
+          <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
             <QrCode className="w-4 h-4 mr-2" />
             QR 스캔으로 승차 확인
           </Button>
         </Link>
       ) : (
-        <Button className="w-full" onClick={handleSelfTap} disabled={busy}>
-          {busy ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+          onClick={handleSelfTap} disabled={busy}>
+          {busy
+            ? <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            : <CheckCircle2 className="w-4 h-4 mr-2" />}
           점호 확인
         </Button>
       )}
@@ -182,11 +189,10 @@ export default function StudentPage() {
     router.replace("/login");
   }
 
-  // user가 null이면 (로그아웃 직후 redirect 대기 중) render 가드
   if (loading || dataLoading || !user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-sky-400" />
       </div>
     );
   }
@@ -202,57 +208,67 @@ export default function StudentPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50 text-gray-900">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur border-b border-slate-800">
+      <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-sky-100 shadow-sm">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <User className="w-5 h-5 text-blue-400" />
-            <span className="font-bold">학생 포털</span>
+            <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
+              <User className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <p className="font-bold text-sm leading-none text-gray-900">학생 포털</p>
+              {student && (
+                <p className="text-[11px] text-gray-400 leading-none mt-0.5">{student.이름}</p>
+              )}
+            </div>
           </div>
-          <Button size="sm" variant="ghost" onClick={handleLogout} className="text-slate-400">
+          <Button size="sm" variant="ghost" onClick={handleLogout} className="text-gray-400 hover:text-gray-700">
             <LogOut className="w-4 h-4" />
           </Button>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
+      <main className="max-w-lg mx-auto px-4 py-5 space-y-4">
         {/* 내 정보 */}
         {student && (
-          <Card className="bg-slate-900 border-slate-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <User className="w-4 h-4 text-blue-400" /> 내 정보
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xl font-bold">{student.이름}</span>
-                <Badge className="bg-blue-800 text-blue-100">
-                  {student.학년}학년 {student.반}반 {student.번호}번
-                </Badge>
+          <Card className="border-blue-100 shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 px-5 py-4 text-white">
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-xs text-blue-100">{student.학년}학년 {student.반}반 {student.번호}번</p>
+                  <p className="text-2xl font-bold mt-0.5">{student.이름}</p>
+                </div>
+                {student.요양호여부 && (
+                  <Badge className="bg-white/20 text-white border-white/30">요양호</Badge>
+                )}
               </div>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="bg-slate-800 rounded-lg p-2">
-                  <Bus className="w-4 h-4 text-amber-400 mx-auto mb-1" />
-                  <p className="text-xs text-slate-400">호차</p>
-                  <p className="font-bold">{student.호차}호차</p>
+            </div>
+            <CardContent className="pt-4 pb-4 space-y-3 bg-white">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-2.5">
+                  <Bus className="w-4 h-4 text-amber-500 mx-auto mb-1" />
+                  <p className="text-[10px] text-gray-500">호차</p>
+                  <p className="font-bold text-sm text-gray-900">{student.호차}호차</p>
                 </div>
-                <div className="bg-slate-800 rounded-lg p-2">
-                  <Hotel className="w-4 h-4 text-purple-400 mx-auto mb-1" />
-                  <p className="text-xs text-slate-400">호실</p>
-                  <p className="font-bold">{student.호실}</p>
+                <div className="bg-purple-50 border border-purple-100 rounded-xl p-2.5">
+                  <Hotel className="w-4 h-4 text-purple-500 mx-auto mb-1" />
+                  <p className="text-[10px] text-gray-500">호실</p>
+                  <p className="font-bold text-sm text-gray-900">{student.호실}</p>
                 </div>
-                <div className="bg-slate-800 rounded-lg p-2">
-                  <Plane className="w-4 h-4 text-green-400 mx-auto mb-1" />
-                  <p className="text-xs text-slate-400">비행편</p>
-                  <p className="font-bold text-sm">{student.비행편 || "-"}</p>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
+                  <Plane className="w-4 h-4 text-emerald-500 mx-auto mb-1" />
+                  <p className="text-[10px] text-gray-500">비행편</p>
+                  <p className="font-bold text-sm text-gray-900">{student.비행편 || "-"}</p>
                 </div>
               </div>
               {(student.건강요주의사항 || student.특이사항) && (
-                <div className="bg-amber-900/30 border border-amber-700 rounded-lg p-2 text-xs text-amber-300">
-                  {student.건강요주의사항 && <p>건강: {student.건강요주의사항}</p>}
-                  {student.특이사항 && <p>특이: {student.특이사항}</p>}
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex gap-2 text-xs">
+                  <Heart className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="text-amber-800 space-y-0.5">
+                    {student.건강요주의사항 && <p><span className="font-semibold">건강:</span> {student.건강요주의사항}</p>}
+                    {student.특이사항 && <p><span className="font-semibold">특이:</span> {student.특이사항}</p>}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -262,44 +278,50 @@ export default function StudentPage() {
         {/* 바로가기 */}
         <div className="grid grid-cols-2 gap-3">
           <Link href="/schedule">
-            <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 flex items-center gap-3 hover:border-blue-500 transition-colors">
-              <Calendar className="w-5 h-5 text-blue-400 shrink-0" />
+            <div className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm hover:border-blue-300 hover:shadow-md transition-all">
+              <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+                <Calendar className="w-4.5 h-4.5 text-blue-600" />
+              </div>
               <div>
-                <p className="text-sm font-medium">여행 일정</p>
-                <p className="text-xs text-slate-400">일차별 일정</p>
+                <p className="text-sm font-semibold text-gray-900">여행 일정</p>
+                <p className="text-xs text-gray-400">일차별 일정</p>
               </div>
             </div>
           </Link>
           <Link href="/contacts">
-            <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 flex items-center gap-3 hover:border-green-500 transition-colors">
-              <Phone className="w-5 h-5 text-green-400 shrink-0" />
+            <div className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm hover:border-emerald-300 hover:shadow-md transition-all">
+              <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
+                <Phone className="w-4.5 h-4.5 text-emerald-600" />
+              </div>
               <div>
-                <p className="text-sm font-medium">비상 연락처</p>
-                <p className="text-xs text-slate-400">긴급 연락처</p>
+                <p className="text-sm font-semibold text-gray-900">비상 연락처</p>
+                <p className="text-xs text-gray-400">긴급 연락처</p>
               </div>
             </div>
           </Link>
           <Link href="/chat" className="col-span-2">
-            <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 flex items-center gap-3 hover:border-amber-500 transition-colors">
-              <MessageCircle className="w-5 h-5 text-amber-400 shrink-0" />
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm hover:border-amber-300 hover:shadow-md transition-all">
+              <div className="w-9 h-9 bg-white/70 rounded-xl flex items-center justify-center shrink-0">
+                <MessageCircle className="w-4.5 h-4.5 text-amber-600" />
+              </div>
               <div>
-                <p className="text-sm font-medium">공지방</p>
-                <p className="text-xs text-slate-400">담임·관리자 선생님 공지 수신</p>
+                <p className="text-sm font-semibold text-gray-900">공지방</p>
+                <p className="text-xs text-gray-500">담임·관리자 선생님 공지 수신</p>
               </div>
             </div>
           </Link>
         </div>
 
         {/* 진행 중 점호 */}
-        <Card className="bg-slate-900 border-slate-700">
+        <Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-400" /> 진행 중인 점호
+            <CardTitle className="text-base flex items-center gap-2 text-gray-900">
+              <Clock className="w-4 h-4 text-amber-500" /> 진행 중인 점호
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {mySessions.length === 0 ? (
-              <p className="text-slate-500 text-sm text-center py-3">현재 진행 중인 점호가 없습니다.</p>
+              <p className="text-gray-400 text-sm text-center py-4">현재 진행 중인 점호가 없습니다.</p>
             ) : (
               mySessions.map((s) => (
                 <CheckinCard
@@ -315,28 +337,28 @@ export default function StudentPage() {
         </Card>
 
         {/* 오늘 점호 이력 */}
-        <Card className="bg-slate-900 border-slate-700">
+        <Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-green-400" /> 오늘 점호 이력
+            <CardTitle className="text-base flex items-center gap-2 text-gray-900">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> 오늘 점호 이력
             </CardTitle>
           </CardHeader>
           <CardContent>
             {checkins.length === 0 ? (
-              <p className="text-slate-500 text-sm text-center py-3">오늘 점호 기록이 없습니다.</p>
+              <p className="text-gray-400 text-sm text-center py-4">오늘 점호 기록이 없습니다.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {checkins.map((c) => {
                   const method = c.method === "SELF_TAP" ? "자가 확인" : c.method === "TEACHER_TAP" ? "선생님 확인" : "QR 승차";
                   const ts = c.timestamp.toDate();
                   const timeStr = `${ts.getHours().toString().padStart(2, "0")}:${ts.getMinutes().toString().padStart(2, "0")}`;
                   return (
-                    <div key={c.id} className="flex items-center justify-between text-sm py-1.5 border-b border-slate-800 last:border-0">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                    <div key={c.id} className="flex items-center justify-between text-sm py-2 px-2 rounded-lg bg-emerald-50/40 border border-emerald-100">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                         <span>{method}</span>
                       </div>
-                      <span className="text-slate-400 text-xs">{timeStr}</span>
+                      <span className="text-gray-400 text-xs font-mono">{timeStr}</span>
                     </div>
                   );
                 })}
@@ -347,23 +369,23 @@ export default function StudentPage() {
 
         {/* 비상 연락처 */}
         {contacts.length > 0 && (
-          <Card className="bg-slate-900 border-slate-700">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Phone className="w-4 h-4 text-green-400" /> 비상 연락처
+              <CardTitle className="text-base flex items-center gap-2 text-gray-900">
+                <Phone className="w-4 h-4 text-emerald-500" /> 비상 연락처
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {Object.entries(contactGroups).map(([group, list]) => (
                 <div key={group}>
-                  <p className="text-xs text-slate-400 mb-2">{group}</p>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">{group}</p>
                   <div className="space-y-1.5">
                     {list.map((c) => (
                       <div key={c.id} className="flex items-center justify-between">
-                        <span className="text-sm">{c.이름}</span>
+                        <span className="text-sm text-gray-800">{c.이름}</span>
                         <a
                           href={`tel:${c.연락처.replace(/-/g, "")}`}
-                          className="flex items-center gap-1.5 bg-green-900/40 text-green-300 text-xs px-3 py-1.5 rounded-lg"
+                          className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs px-3 py-1.5 rounded-lg font-medium hover:bg-emerald-100 transition-colors"
                         >
                           <Phone className="w-3 h-3" />
                           {c.연락처}
@@ -371,7 +393,7 @@ export default function StudentPage() {
                       </div>
                     ))}
                   </div>
-                  <Separator className="mt-3 bg-slate-800" />
+                  <Separator className="mt-3 bg-gray-100" />
                 </div>
               ))}
             </CardContent>
@@ -379,14 +401,14 @@ export default function StudentPage() {
         )}
 
         {/* SOS */}
-        <div className="pb-4">
+        <div className="pb-4 pt-2">
           <a href="tel:119">
-            <Button className="w-full bg-red-700 hover:bg-red-600 text-white font-bold py-6 text-lg">
+            <Button className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold py-6 text-lg shadow-lg shadow-red-200">
               <AlertTriangle className="w-5 h-5 mr-2" />
               긴급 신고 (119)
             </Button>
           </a>
-          <p className="text-center text-xs text-slate-500 mt-2">
+          <p className="text-center text-xs text-gray-400 mt-2">
             위급 상황 시 즉시 인솔 선생님께 연락하세요.
           </p>
         </div>
