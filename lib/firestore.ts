@@ -189,6 +189,59 @@ export async function createCheckin(params: {
   });
 }
 
+/**
+ * 교사가 수동으로 학생을 탑승 처리한다. 이미 체크인이 있으면 skip.
+ * 동일 세션에 같은 학생의 checkin doc 이 여러 개 생기지 않도록
+ * 사전 조회로 dedupe.
+ */
+export async function manualCheckin(params: {
+  sessionId: string;
+  studentId: string;
+  byUid: string;
+  busScanned?: number;
+}): Promise<{ created: boolean }> {
+  const sessionRef = `/checkin_sessions/${params.sessionId}`;
+  const studentRef = `/students/${params.studentId}`;
+
+  // 중복 확인
+  const existing = await getDocs(query(
+    collection(db, "checkins"),
+    where("sessionRef", "==", sessionRef),
+    where("studentRef", "==", studentRef),
+  ));
+  if (!existing.empty) return { created: false };
+
+  await addDoc(collection(db, "checkins"), {
+    sessionRef,
+    studentRef,
+    method: "TEACHER_TAP",
+    busScanned: params.busScanned ?? null,
+    timestamp: Timestamp.now(),
+    byUid: params.byUid,
+  });
+  return { created: true };
+}
+
+/**
+ * 수동 체크인을 취소한다 (교사가 잘못 눌렀을 때).
+ * 해당 세션·학생의 모든 체크인 doc 을 삭제.
+ */
+export async function undoManualCheckin(params: {
+  sessionId: string;
+  studentId: string;
+}): Promise<{ removed: number }> {
+  const snap = await getDocs(query(
+    collection(db, "checkins"),
+    where("sessionRef", "==", `/checkin_sessions/${params.sessionId}`),
+    where("studentRef", "==", `/students/${params.studentId}`),
+  ));
+  if (snap.empty) return { removed: 0 };
+  const batch = writeBatch(db);
+  snap.docs.forEach((d) => batch.delete(d.ref));
+  await batch.commit();
+  return { removed: snap.size };
+}
+
 export function subscribeSessionCheckins(
   sessionId: string,
   cb: (checkins: Checkin[]) => void

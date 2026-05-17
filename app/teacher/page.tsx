@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FadeStaggerContainer, FadeStaggerItem } from "@/components/motion-presets";
 import { SkeletonCard } from "@/components/ui/skeleton";
+import { MiniDonut } from "@/components/mini-donut";
 
 
 function timeLeft(session: CheckinSession): string {
@@ -78,23 +79,26 @@ function SessionCard({ session, uid, totalStudents }: {
 
   return (
     <div className="border border-gray-200 rounded-xl p-4 space-y-3 bg-white shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="font-semibold text-gray-900">{session.name}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-900 truncate">{session.name}</p>
           <p className="text-xs text-gray-500">{session.type} · {session.scope}</p>
+          <Badge variant="outline" className="border-amber-400 text-amber-600 bg-amber-50 mt-1.5 text-[10px]">
+            {remaining}
+          </Badge>
         </div>
-        <Badge variant="outline" className="border-amber-400 text-amber-600 bg-amber-50">
-          {remaining}
-        </Badge>
+        <MiniDonut completed={checkedCount} total={totalStudents} size={56} stroke={6} />
       </div>
 
       <div>
         <div className="flex justify-between text-xs text-gray-500 mb-1">
-          <span>{checkedCount}명 완료</span>
-          <span>{pct}%</span>
+          <span>{checkedCount}/{totalStudents}명 완료</span>
+          <span className="tabular-nums">{pct}%</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+        <div className="w-full bg-gray-100 rounded-full h-1.5">
+          <div className={`h-1.5 rounded-full transition-all ${
+            pct >= 100 ? "bg-green-500" : pct >= 70 ? "bg-blue-500" : pct >= 30 ? "bg-amber-500" : "bg-red-400"
+          }`} style={{ width: `${pct}%` }} />
         </div>
       </div>
 

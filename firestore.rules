@@ -72,7 +72,9 @@ service cloud.firestore {
       allow create: if isAuth();
       allow read:   if isTeacherOrAdmin()
                     || (isStudent() && resource.data.byUid == request.auth.uid);
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin();
+      // 교사/관리자가 수동 탑승을 취소할 수 있도록 delete 허용
+      allow delete: if isTeacherOrAdmin();
     }
 
     match /incidents/{iid} {

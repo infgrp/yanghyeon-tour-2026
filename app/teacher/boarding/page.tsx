@@ -2,14 +2,22 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Phone, Bus, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  ArrowLeft, Phone, Bus, CheckCircle2, Loader2, LayoutGrid, Armchair,
+} from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import {
   subscribeStudents, subscribeOpenSessions, subscribeSessionCheckins,
+  getBuses, manualCheckin, undoManualCheckin,
 } from "@/lib/firestore";
-import type { Student, CheckinSession, Checkin } from "@/types";
+import type { Student, CheckinSession, Checkin, Bus as BusType } from "@/types";
+import { BusSeatGrid } from "@/components/bus-seat-grid";
+import { MiniDonut } from "@/components/mini-donut";
+
+type ViewMode = "class" | "bus";
 
 function timeLeft(session: CheckinSession): string {
   const diff = session.endAt.toDate().getTime() - Date.now();
@@ -19,6 +27,7 @@ function timeLeft(session: CheckinSession): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+// ── 반별 미승차 상세 ────────────────────────────────────────────
 function ClassDetail({
   classNum, students, checkedIds,
 }: {
@@ -89,13 +98,19 @@ export default function BoardingPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [sessions, setSessions] = useState<CheckinSession[]>([]);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
+  const [buses, setBuses] = useState<BusType[]>([]);
   const [selectedClass, setSelectedClass] = useState<number | null>(null);
   const [remaining, setRemaining] = useState("");
+  const [view, setView] = useState<ViewMode>("class");
+  const [working, setWorking] = useState<string | null>(null); // 현재 처리 중인 학생 id
 
   const boardingSession = useMemo(
     () => sessions.find((s) => s.type === "승차점호") ?? null,
     [sessions]
   );
+  const isExpired = boardingSession
+    ? boardingSession.endAt.toDate().getTime() <= Date.now()
+    : false;
 
   useEffect(() => {
     if (loading) return;
@@ -103,7 +118,6 @@ export default function BoardingPage() {
     if (role && role !== "teacher" && role !== "admin") { router.replace("/"); return; }
   }, [user, role, loading, router]);
 
-  // 담임반 자동 선택 (교사)
   useEffect(() => {
     if (appUser?.담임반 && selectedClass === null) {
       setSelectedClass(appUser.담임반);
@@ -112,6 +126,7 @@ export default function BoardingPage() {
 
   useEffect(() => { return subscribeStudents(setStudents); }, []);
   useEffect(() => { return subscribeOpenSessions(setSessions); }, []);
+  useEffect(() => { getBuses().then(setBuses).catch(() => setBuses([])); }, []);
 
   useEffect(() => {
     if (!boardingSession) { setCheckins([]); return; }
@@ -131,6 +146,7 @@ export default function BoardingPage() {
     return set;
   }, [checkins]);
 
+  // 반별 그룹
   const classes = useMemo(() => {
     const map = new Map<number, Student[]>();
     students.forEach((s) => {
@@ -147,6 +163,27 @@ export default function BoardingPage() {
       }));
   }, [students, checkedIds]);
 
+  // 호차별 그룹
+  const busGroups = useMemo(() => {
+    const map = new Map<number, Student[]>();
+    students.forEach((s) => {
+      if (s.호차 == null) return;
+      if (!map.has(s.호차)) map.set(s.호차, []);
+      map.get(s.호차)!.push(s);
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([호차, list]) => {
+        const busMeta = buses.find((b) => b.호차 === 호차);
+        return {
+          호차,
+          students: list,
+          guideName: busMeta?.인솔교사1,
+          driverName: busMeta?.기사명,
+        };
+      });
+  }, [students, buses]);
+
   const totalStats = useMemo(() => ({
     classes: classes.length,
     completed: classes.filter((c) => c.total > 0 && c.checked === c.total).length,
@@ -160,17 +197,62 @@ export default function BoardingPage() {
 
   const backHref = role === "admin" ? "/admin" : "/teacher";
 
+  // 수동 탑승 toggle 핸들러
+  async function handleSeatToggle(student: Student, isChecked: boolean) {
+    if (!boardingSession || !user) return;
+    if (isExpired) {
+      toast.error("점호 시간이 만료되어 수정할 수 없습니다.");
+      return;
+    }
+    if (working) return;
+    setWorking(student.id);
+    try {
+      if (isChecked) {
+        // 취소 확인 (실수 방지)
+        if (!confirm(`${student.이름} 학생의 탑승을 취소할까요?`)) {
+          setWorking(null);
+          return;
+        }
+        const res = await undoManualCheckin({
+          sessionId: boardingSession.id,
+          studentId: student.id,
+        });
+        if (res.removed > 0) toast.success(`${student.이름} 탑승 취소됨`);
+      } else {
+        const res = await manualCheckin({
+          sessionId: boardingSession.id,
+          studentId: student.id,
+          byUid: user.uid,
+          busScanned: student.호차,
+        });
+        if (res.created) toast.success(`${student.이름} 수동 탑승 처리`);
+        else toast.info("이미 탑승 처리된 학생입니다.");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("permission-denied")) {
+        toast.error("권한이 없습니다.");
+      } else {
+        toast.error("처리 실패. 다시 시도해주세요.");
+      }
+    } finally {
+      setWorking(null);
+    }
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50 flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
       </div>
     );
   }
 
+  const inBusView = view === "bus" && selectedClass === null;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
+      <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-sky-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           {selectedClass !== null ? (
             <Button size="sm" variant="ghost" className="text-gray-500 p-1"
@@ -191,9 +273,28 @@ export default function BoardingPage() {
             {boardingSession && (
               <p className="text-xs text-gray-400 truncate">
                 {boardingSession.name} · 잔여 {remaining}
+                {isExpired && <span className="text-red-500 ml-1">(만료)</span>}
               </p>
             )}
           </div>
+
+          {/* 뷰 토글 — 반별/호차별, 최상위 화면에서만 표시 */}
+          {selectedClass === null && boardingSession && (
+            <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
+              <button onClick={() => setView("class")}
+                className={`px-2 py-1 rounded-md text-[11px] font-medium flex items-center gap-1 transition-colors ${
+                  view === "class" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"
+                }`}>
+                <LayoutGrid className="w-3 h-3" /> 반별
+              </button>
+              <button onClick={() => setView("bus")}
+                className={`px-2 py-1 rounded-md text-[11px] font-medium flex items-center gap-1 transition-colors ${
+                  view === "bus" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"
+                }`}>
+                <Armchair className="w-3 h-3" /> 호차별
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -209,14 +310,55 @@ export default function BoardingPage() {
             students={selectedClassData.students}
             checkedIds={checkedIds}
           />
-        ) : (
+        ) : inBusView ? (
+          // ── 호차별 좌석 뷰 ─────────────────────────────────
           <div className="space-y-4">
-            {/* 전체 요약 */}
+            <div className={`rounded-2xl p-4 ${
+              totalStats.checked === totalStats.total && totalStats.total > 0
+                ? "bg-gradient-to-r from-green-500 to-emerald-600"
+                : "bg-gradient-to-r from-blue-600 to-indigo-600"
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="text-white">
+                  <p className="font-bold text-sm">
+                    {totalStats.checked === totalStats.total && totalStats.total > 0
+                      ? "🎉 전체 승차 완료!"
+                      : "호차별 좌석 보기"}
+                  </p>
+                  <p className="text-white/80 text-[11px] mt-0.5">
+                    좌석을 탭하면 수동 탑승/취소 처리됩니다
+                  </p>
+                </div>
+                <MiniDonut completed={totalStats.checked} total={totalStats.total}
+                  size={56} stroke={6} color="#ffffff" />
+              </div>
+            </div>
+
+            {busGroups.length === 0 ? (
+              <p className="text-center text-gray-400 py-12">호차 정보가 없습니다.</p>
+            ) : (
+              busGroups.map((g) => (
+                <BusSeatGrid
+                  key={g.호차}
+                  busNumber={g.호차}
+                  students={g.students}
+                  checkedIds={checkedIds}
+                  guideName={g.guideName}
+                  driverName={g.driverName}
+                  disabled={isExpired || !!working}
+                  onSeatClick={handleSeatToggle}
+                />
+              ))
+            )}
+          </div>
+        ) : (
+          // ── 반별 그리드 뷰 (기본) ────────────────────────
+          <div className="space-y-4">
             <div className={`rounded-2xl p-4 ${
               totalStats.completed === totalStats.classes && totalStats.classes > 0
-                ? "bg-green-500"
-                : "bg-blue-600"
-            }`}>
+                ? "bg-gradient-to-r from-green-500 to-emerald-600"
+                : "bg-gradient-to-r from-blue-600 to-indigo-600"
+            } shadow-md`}>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-white font-bold text-sm">
                   {totalStats.completed === totalStats.classes && totalStats.classes > 0
@@ -233,7 +375,6 @@ export default function BoardingPage() {
               </div>
             </div>
 
-            {/* 반별 그리드 */}
             <div className="grid grid-cols-2 gap-3">
               {classes.map((c) => {
                 const pct = c.total > 0 ? Math.round((c.checked / c.total) * 100) : 0;
@@ -252,24 +393,17 @@ export default function BoardingPage() {
                       <span className="font-bold text-gray-900 text-lg">{c.반}반</span>
                       {isComplete
                         ? <CheckCircle2 className="w-5 h-5 text-green-500" />
-                        : <span className="text-xs font-medium text-gray-500">{pct}%</span>}
+                        : <MiniDonut completed={c.checked} total={c.total} size={36} stroke={4} showText={false} />}
                     </div>
                     <p className={`text-sm font-semibold ${
                       isComplete ? "text-green-600"
                         : isEmpty ? "text-red-500"
                         : "text-amber-600"
                     }`}>
-                      {c.checked}/{c.total}명
+                      {c.checked}/{c.total}명 ({pct}%)
                     </p>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-                      <div className={`h-1.5 rounded-full transition-all ${
-                        isComplete ? "bg-green-500"
-                          : isEmpty ? "bg-red-400"
-                          : "bg-amber-400"
-                      }`} style={{ width: `${pct}%` }} />
-                    </div>
                     {!isComplete && c.total > 0 && (
-                      <p className="text-xs text-gray-400 mt-1.5">미승차 {c.total - c.checked}명 →</p>
+                      <p className="text-xs text-gray-400 mt-1">미승차 {c.total - c.checked}명 →</p>
                     )}
                   </button>
                 );
