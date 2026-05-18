@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, QrCode, CheckCircle2, Loader2 } from "lucide-react";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { getOpenSessions, getStudent, createCheckin } from "@/lib/firestore";
 import type { CheckinSession, Student } from "@/types";
@@ -143,11 +142,10 @@ export default function StudentQRPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur border-b border-slate-800">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
-          <Link href="/student">
-            <Button size="sm" variant="ghost" className="text-slate-400 p-1">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
+          <Button size="sm" variant="ghost" className="text-slate-400 p-1"
+            onClick={() => router.push("/student")}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <span className="font-bold">승차 QR 스캔</span>
         </div>
       </header>

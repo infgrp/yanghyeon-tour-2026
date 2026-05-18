@@ -112,11 +112,10 @@ function CheckinCard({
           <span>점호가 완료되었습니다.</span>
         </div>
       ) : isBus ? (
-        <Link href="/student/qr">
-          <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-            <QrCode className="w-4 h-4 mr-2" />
-            QR 스캔으로 승차 확인
-          </Button>
+        <Link href="/student/qr"
+          className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg py-2.5 text-sm transition-colors">
+          <QrCode className="w-4 h-4" />
+          QR 스캔으로 승차 확인
         </Link>
       ) : (
         <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white"

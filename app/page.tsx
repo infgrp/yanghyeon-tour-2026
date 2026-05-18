@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar, Phone, MapPin, LogIn, Plane, Info } from "lucide-react";
@@ -89,10 +88,8 @@ export default function HomePage() {
             </div>
             <span className="font-bold text-gray-900">양현고 수학여행</span>
           </div>
-          <Link href="/login">
-            <Button size="sm" variant="outline" className="border-gray-300 text-gray-600 hover:bg-gray-50 gap-1">
-              <LogIn className="w-3.5 h-3.5" /> 로그인
-            </Button>
+          <Link href="/login" className="inline-flex items-center gap-1 border border-gray-300 text-gray-600 hover:bg-gray-50 rounded-md px-2.5 py-1.5 text-[0.8rem] font-medium transition-colors">
+            <LogIn className="w-3.5 h-3.5" /> 로그인
           </Link>
         </div>
       </header>

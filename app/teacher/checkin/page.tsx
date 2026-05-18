@@ -412,6 +412,17 @@ function TeacherCheckinContent() {
               className="pl-9 border-gray-300 text-gray-900 bg-white" />
           </div>
 
+          {/* 다른 반 빠른 접근 — 담임반으로 자동 필터된 경우만 표시 */}
+          {(gradeFilter !== "전체" || classFilter !== "전체") && (
+            <button
+              type="button"
+              onClick={() => { setGradeFilter("전체"); setClassFilter("전체"); }}
+              className="mb-2 text-xs text-blue-600 hover:text-blue-700 font-medium underline underline-offset-2"
+            >
+              다른 반·전체 학년 보기
+            </button>
+          )}
+
           {/* 학년 필터 */}
           <div className="flex gap-1 mb-2">
             {["전체", "1", "2", "3"].map((g) => (

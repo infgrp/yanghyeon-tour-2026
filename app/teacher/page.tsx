@@ -44,6 +44,7 @@ function SessionCard({ session, uid, totalStudents }: {
   uid: string;
   totalStudents: number;
 }) {
+  const router = useRouter();
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [remaining, setRemaining] = useState(timeLeft(session));
   const [extending, setExtending] = useState(false);
@@ -106,11 +107,11 @@ function SessionCard({ session, uid, totalStudents }: {
       </div>
 
       <div className="flex gap-2">
-        <Link href={`/teacher/checkin?session=${session.id}`} className="flex-1">
-          <Button size="sm" variant="outline" className="w-full border-gray-300 text-gray-600 hover:bg-gray-50">
-            <ClipboardList className="w-3.5 h-3.5 mr-1.5" /> 점호 현황
-          </Button>
-        </Link>
+        <Button size="sm" variant="outline"
+          className="flex-1 border-gray-300 text-gray-600 hover:bg-gray-50"
+          onClick={() => router.push(`/teacher/checkin?session=${session.id}`)}>
+          <ClipboardList className="w-3.5 h-3.5 mr-1.5" /> 점호 현황
+        </Button>
         <Button size="sm" variant="outline" className="border-blue-300 text-blue-600 hover:bg-blue-50"
           onClick={handleExtend} disabled={extending}>
           {extending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "+10분"}
