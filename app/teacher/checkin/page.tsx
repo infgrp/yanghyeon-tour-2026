@@ -9,7 +9,6 @@ import {
   ArrowLeft, Search, CheckCircle2, Loader2, UserCheck,
   LayoutList, Hotel, ChevronDown, ChevronUp, Heart, Phone,
 } from "lucide-react";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import {
   subscribeStudents, subscribeSessionCheckins,
@@ -23,10 +22,10 @@ type FilterMode = "all" | "done" | "missing";
 type ViewMode = "list" | "room";
 
 // ── 리스트 뷰의 학생 한 행 ───────────────────────────────────
-function StudentCheckinRow({ student, checked, onTap, tapping }: {
+function StudentCheckinRow({ student, checked, onToggle, tapping }: {
   student: Student;
   checked: boolean;
-  onTap: () => void;
+  onToggle: (isChecked: boolean) => void;
   tapping: boolean;
 }) {
   return (
@@ -48,11 +47,21 @@ function StudentCheckinRow({ student, checked, onTap, tapping }: {
       </div>
       <div className="flex items-center gap-2">
         {checked ? (
-          <CheckCircle2 className="w-5 h-5 text-green-500" />
+          <button
+            type="button"
+            onClick={() => onToggle(true)}
+            disabled={tapping}
+            className="flex items-center gap-1 text-xs text-green-700 bg-white border border-green-300 hover:text-red-500 hover:border-red-300 hover:bg-red-50 px-2.5 py-1.5 rounded-md transition-colors"
+            title="탭하여 취소"
+          >
+            {tapping
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <><CheckCircle2 className="w-3.5 h-3.5" /> 완료</>}
+          </button>
         ) : (
           <Button size="sm" variant="outline"
             className="border-amber-300 text-amber-600 hover:bg-amber-50 h-8 px-3"
-            onClick={onTap} disabled={tapping}>
+            onClick={() => onToggle(false)} disabled={tapping}>
             {tapping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
           </Button>
         )}
@@ -348,11 +357,10 @@ function TeacherCheckinContent() {
       <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-sky-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3 mb-3">
-            <Link href="/teacher">
-              <Button size="sm" variant="ghost" className="text-gray-500 p-1">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
+            <Button size="sm" variant="ghost" className="text-gray-500 p-1"
+              onClick={() => router.push("/teacher")}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-gray-900 truncate">{session?.name ?? "점호 현황"}</p>
               {session && (
@@ -475,7 +483,7 @@ function TeacherCheckinContent() {
           ) : (
             filtered.map((s) => (
               <StudentCheckinRow key={s.id} student={s} checked={checkedIds.has(s.id)}
-                onTap={() => handleManualToggle(s, false)} tapping={working === s.id} />
+                onToggle={(isChecked) => handleManualToggle(s, isChecked)} tapping={working === s.id} />
             ))
           )
         )}

@@ -10,7 +10,6 @@ import {
   ArrowLeft, Upload, FileSpreadsheet, CheckCircle2, XCircle,
   Loader2, AlertTriangle, ChevronDown, ChevronUp,
 } from "lucide-react";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { parseExcel, type SheetDebugInfo } from "@/lib/excel";
 import {
@@ -212,11 +211,10 @@ export default function AdminUploadPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link href="/admin">
-            <Button size="sm" variant="ghost" className="text-gray-500 p-1">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
+          <Button size="sm" variant="ghost" className="text-gray-500 p-1"
+            onClick={() => router.push("/admin")}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <span className="font-bold text-gray-900">Excel 데이터 업로드</span>
         </div>
       </header>
@@ -364,9 +362,9 @@ export default function AdminUploadPage() {
               <Button variant="outline" className="flex-1 border-gray-300 text-gray-600" onClick={handleReset}>
                 다시 업로드
               </Button>
-              <Link href="/admin" className="flex-1">
-                <Button className="w-full">대시보드로</Button>
-              </Link>
+              <Button className="flex-1" onClick={() => router.push("/admin")}>
+                대시보드로
+              </Button>
             </div>
           </div>
         )}

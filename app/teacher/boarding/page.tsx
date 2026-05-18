@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Phone, Bus, CheckCircle2, Loader2, LayoutGrid, Armchair,
 } from "lucide-react";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import {
   subscribeStudents, subscribeOpenSessions, subscribeSessionCheckins,
@@ -254,18 +253,13 @@ export default function BoardingPage() {
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
       <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-sky-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          {selectedClass !== null ? (
-            <Button size="sm" variant="ghost" className="text-gray-500 p-1"
-              onClick={() => setSelectedClass(null)}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          ) : (
-            <Link href={backHref}>
-              <Button size="sm" variant="ghost" className="text-gray-500 p-1">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-          )}
+          <Button size="sm" variant="ghost" className="text-gray-500 p-1"
+            onClick={() => {
+              if (selectedClass !== null) setSelectedClass(null);
+              else router.push(backHref);
+            }}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-gray-900">
               {selectedClass !== null ? `${selectedClass}반 미승차 학생` : "승차 현황"}

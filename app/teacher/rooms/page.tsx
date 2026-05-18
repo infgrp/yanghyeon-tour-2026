@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Hotel, Phone, ChevronDown, ChevronUp, Loader2, Users } from "lucide-react";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { subscribeStudents } from "@/lib/firestore";
 import type { Student } from "@/types";
@@ -130,11 +129,10 @@ export default function TeacherRoomsPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link href="/teacher">
-            <Button size="sm" variant="ghost" className="text-gray-500 p-1">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
+          <Button size="sm" variant="ghost" className="text-gray-500 p-1"
+            onClick={() => router.push("/teacher")}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <div>
             <p className="font-bold text-gray-900">숙소 배정</p>
             {appUser?.담임반 && (

@@ -12,7 +12,6 @@ import {
   ArrowLeft, AlertTriangle, Plus, Loader2, CheckCircle2,
   Clock, Users, ClipboardCheck, Siren,
 } from "lucide-react";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { createIncident, getIncidents, updateIncident, getStudents } from "@/lib/firestore";
 import type { Incident, IncidentSeverity, Student } from "@/types";
@@ -363,11 +362,10 @@ export default function TeacherIncidentPage() {
       <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-sky-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/teacher">
-              <Button size="sm" variant="ghost" className="text-gray-500 p-1">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
+            <Button size="sm" variant="ghost" className="text-gray-500 p-1"
+              onClick={() => router.push("/teacher")}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <span className="font-bold text-gray-900">사건사고 관리</span>
           </div>
           {user && <CreateIncidentForm uid={user.uid} students={students} onCreated={loadData} />}
