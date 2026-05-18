@@ -137,8 +137,13 @@ export default function ChatRoomPage() {
           role,
         },
       });
-    } catch {
-      toast.error("메시지 전송에 실패했습니다.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("학생은") || msg.includes("permission-denied")) {
+        toast.error("이 방에서는 메시지를 보낼 수 없습니다.");
+      } else {
+        toast.error("메시지 전송 실패: " + msg);
+      }
       setText(body);
     } finally {
       setSending(false);

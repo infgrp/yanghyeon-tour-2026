@@ -825,10 +825,17 @@ function SettingsTab({ students }: { students: Student[] }) {
   );
 
   async function handleReset(s: Student) {
+    if (!confirm(
+      `${s.이름} (${s.학년}-${s.반}-${s.번호}) 학생의 가입 정보를 초기화할까요?\n\n` +
+      `해당 학생은 다시 가입할 수 있게 됩니다. 이미 발급된 Firebase Auth 계정은 별도 삭제 필요.`
+    )) return;
     setResetting(s.id);
     try {
       await resetStudentUid(s.id);
       toast.success(`${s.이름} UID 초기화 완료`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      toast.error("초기화 실패: " + msg);
     } finally { setResetting(null); }
   }
 
