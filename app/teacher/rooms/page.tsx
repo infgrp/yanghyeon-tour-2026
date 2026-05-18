@@ -63,13 +63,17 @@ function RoomCard({ 호실, students }: { 호실: string; students: Student[] })
                 {student.학생연락처 ? (
                   <a href={`tel:${student.학생연락처.replace(/-/g, "")}`}
                     className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-green-50 border border-green-200 text-green-700 py-1.5 rounded-lg font-medium">
-                    <Phone className="w-3 h-3" /> {student.학생연락처}
+                    <Phone className="w-3 h-3" />
+                    <span className="font-bold">학생</span>
+                    <span>{student.학생연락처}</span>
                   </a>
                 ) : <div className="flex-1" />}
                 {student.보호자연락처 ? (
                   <a href={`tel:${student.보호자연락처.replace(/-/g, "")}`}
                     className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-blue-50 border border-blue-200 text-blue-700 py-1.5 rounded-lg font-medium">
-                    <Phone className="w-3 h-3" /> {student.보호자연락처}
+                    <Phone className="w-3 h-3" />
+                    <span className="font-bold">보호자</span>
+                    <span>{student.보호자연락처}</span>
                   </a>
                 ) : <div className="flex-1" />}
               </div>
