@@ -8,11 +8,110 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, Search, User, Phone, AlertTriangle,
-  Loader2, ChevronDown, Heart,
+  Loader2, ChevronDown, Heart, KeyRound, Mail, Copy,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { subscribeStudents } from "@/lib/firestore";
+import { lookupStudentAccount, sendStudentPasswordReset } from "@/lib/auth";
 import type { Student } from "@/types";
+
+function StudentAccountSection({ student }: { student: Student }) {
+  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState<string | null>(null);
+  const [joined, setJoined] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    lookupStudentAccount(student.학년, student.반, student.번호)
+      .then((res) => {
+        if (cancelled) return;
+        if (!res || !res.uid) {
+          setJoined(false);
+          setEmail(null);
+        } else {
+          setJoined(true);
+          setEmail(res.email);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) { setJoined(false); setEmail(null); }
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [student.학년, student.반, student.번호]);
+
+  async function handleCopyEmail() {
+    if (!email) return;
+    try {
+      await navigator.clipboard.writeText(email);
+      toast.success("이메일이 복사되었습니다.");
+    } catch {
+      toast.error("복사 실패. 직접 선택해 복사해주세요.");
+    }
+  }
+
+  async function handleSendReset() {
+    if (!email) return;
+    if (!confirm(`${student.이름} 학생(${email})에게 비밀번호 재설정 이메일을 발송할까요?\n\n학생이 받은편지함에서 링크를 눌러 새 비밀번호를 설정합니다.`)) return;
+    setSending(true);
+    try {
+      await sendStudentPasswordReset(email);
+      toast.success("재설정 이메일을 발송했습니다.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("user-not-found")) {
+        toast.error("Auth 계정을 찾을 수 없습니다.");
+      } else {
+        toast.error("발송 실패: " + msg);
+      }
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 space-y-2">
+      <div className="flex items-center gap-1.5 mb-1">
+        <KeyRound className="w-3.5 h-3.5 text-blue-600" />
+        <p className="text-xs font-semibold text-blue-800">가입 정보</p>
+      </div>
+      {loading ? (
+        <p className="text-xs text-gray-400">조회 중...</p>
+      ) : !joined ? (
+        <p className="text-xs text-gray-600">아직 가입하지 않은 학생입니다.</p>
+      ) : !email ? (
+        <p className="text-xs text-amber-700">가입은 되어 있으나 이메일 정보가 없습니다. 관리자에게 backfill 요청.</p>
+      ) : (
+        <>
+          <div className="flex items-center justify-between bg-white border border-blue-200 rounded-md px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Mail className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+              <span className="text-xs text-gray-800 font-mono truncate">{email}</span>
+            </div>
+            <button type="button" onClick={handleCopyEmail}
+              className="text-blue-600 hover:text-blue-800 p-1 shrink-0"
+              title="이메일 복사">
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs h-8"
+            onClick={handleSendReset} disabled={sending}>
+            {sending
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+              : <KeyRound className="w-3.5 h-3.5 mr-1.5" />}
+            비밀번호 재설정 이메일 발송
+          </Button>
+          <p className="text-[10px] text-gray-500 leading-tight">
+            학생이 본인 이메일을 못 보는 경우 관리자에게 임시 비밀번호 설정을 요청하세요.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
 
 function StudentDetail({ student }: { student: Student }) {
   return (
@@ -30,6 +129,8 @@ function StudentDetail({ student }: { student: Student }) {
           </div>
         ))}
       </div>
+
+      <StudentAccountSection student={student} />
 
       {(student.학생연락처 || student.보호자연락처) && (
         <div className="space-y-1.5">

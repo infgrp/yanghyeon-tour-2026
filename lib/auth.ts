@@ -4,6 +4,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
+  sendPasswordResetEmail,
   User,
 } from "firebase/auth";
 import {
@@ -67,10 +68,11 @@ export async function registerStudent(params: {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   const uid = cred.user.uid;
 
-  // 3) /users/{uid} 문서 생성
+  // 3) /users/{uid} 문서 생성 (담임이 학번으로 이메일 조회·비번 재설정할 수 있도록 email 저장)
   await setDoc(doc(db, "users", uid), {
     role: "student",
     studentRef: `/students/${studentId}`,
+    email,
     createdAt: serverTimestamp(),
   });
 
@@ -115,6 +117,7 @@ export async function registerTeacher(params: {
   await setDoc(doc(db, "users", uid), {
     role: "teacher",
     이름,
+    email,
     담임학년: 담임학년 || null,
     담임반: 담임반 || null,
     createdAt: serverTimestamp(),
@@ -139,3 +142,39 @@ export async function fetchAppUser(uid: string): Promise<AppUser | null> {
   if (!snap.exists()) return null;
   return { uid, ...(snap.data() as Omit<AppUser, "uid">) };
 }
+
+// ── 학번으로 학생 가입 정보 조회 (담임용) ────────────────────
+//   학번(G{학년}-C{반}-N{번호}) 으로 students.uid → users 문서 조회.
+//   가입된 이메일을 반환. 미가입이면 null.
+export async function lookupStudentAccount(학년: number, 반: number, 번호: number): Promise<{
+  email: string | null;
+  uid: string | null;
+  studentName: string;
+} | null> {
+  const studentId = `G${학년}-C${반}-N${번호}`;
+  const sSnap = await getDoc(doc(db, "students", studentId));
+  if (!sSnap.exists()) return null;
+  const sData = sSnap.data() as { 이름?: string; uid?: string };
+  if (!sData.uid) {
+    return { email: null, uid: null, studentName: sData.이름 ?? "" };
+  }
+
+  // users 문서에서 email 조회
+  const uSnap = await getDoc(doc(db, "users", sData.uid));
+  let email: string | null = null;
+  if (uSnap.exists()) {
+    const u = uSnap.data() as { email?: string };
+    email = u.email ?? null;
+  }
+  return { email, uid: sData.uid, studentName: sData.이름 ?? "" };
+}
+
+// ── 학생 비밀번호 재설정 이메일 발송 (담임용) ──────────────
+//   Firebase Auth 의 sendPasswordResetEmail 호출.
+//   학생이 본인 이메일을 확인할 수 있어야 동작.
+//   본인 이메일 접근 불가 케이스는 관리자가
+//   scripts/set-student-password.js 로 직접 임시 비번 설정.
+export async function sendStudentPasswordReset(email: string): Promise<void> {
+  await sendPasswordResetEmail(auth, email);
+}
+

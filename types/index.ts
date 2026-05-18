@@ -73,6 +73,7 @@ export interface AppUser {
   role: UserRole;
   studentRef?: string; // /students/G2-C3-N12
   이름?: string;
+  email?: string;      // 가입 이메일 (담임이 학번으로 조회·비번 재설정용)
   담임학년?: number;
   담임반?: number;
   fcmTokens?: string[]; // 푸시 알림용 (디바이스별 토큰 누적)
