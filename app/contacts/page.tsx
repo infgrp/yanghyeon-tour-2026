@@ -80,8 +80,8 @@ export default function ContactsPage() {
                     <p className="text-xs text-gray-400">{c.연락처}</p>
                   </div>
                   <a href={`tel:${c.연락처.replace(/-/g, "")}`}
-                    className="flex items-center gap-1.5 text-xs bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg font-medium">
-                    <Phone className="w-3.5 h-3.5" /> 전화
+                    className="flex items-center gap-2 text-sm bg-green-50 border border-green-200 text-green-700 px-4 py-2.5 rounded-lg font-medium hover:bg-green-100 active:scale-95 transition-all min-h-[44px]">
+                    <Phone className="w-4 h-4" /> 전화
                   </a>
                 </div>
               ))}

@@ -81,6 +81,9 @@ export async function registerStudent(params: {
 }
 
 // ── 교사 가입 ─────────────────────────────────────────────────
+//   교사 코드는 settings/global.teacherSignupCode 와 비교한다.
+//   (이전엔 NEXT_PUBLIC_TEACHER_CODE 환경변수도 fallback 했지만 클라이언트
+//    번들 노출 우려로 제거. 관리자가 admin 페이지에서 언제든 코드 변경 가능.)
 export async function registerTeacher(params: {
   code: string;
   이름: string;
@@ -92,9 +95,15 @@ export async function registerTeacher(params: {
 }): Promise<{ success: boolean; error?: string }> {
   const { code, 이름, 담임학년, 담임반, email, password } = params;
 
-  // 1) 교사 코드 확인
-  const validCode = process.env.NEXT_PUBLIC_TEACHER_CODE;
-  if (!validCode || code !== validCode) {
+  // 1) 교사 코드 확인 — settings/global 의 teacherSignupCode 와 비교
+  const settingsSnap = await getDoc(doc(db, "settings", "global"));
+  const validCode = settingsSnap.exists()
+    ? (settingsSnap.data() as { teacherSignupCode?: string }).teacherSignupCode
+    : undefined;
+  if (!validCode) {
+    return { success: false, error: "교사 가입 코드가 설정되어 있지 않습니다. 관리자에게 문의하세요." };
+  }
+  if (code.trim() !== validCode) {
     return { success: false, error: "교사 가입 코드가 올바르지 않습니다." };
   }
 

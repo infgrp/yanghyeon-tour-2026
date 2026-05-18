@@ -88,7 +88,9 @@ service cloud.firestore {
     }
 
     match /settings/global {
-      allow read:  if isAuth();
+      // 교사 가입 코드 검증을 위해 가입 전(미인증) 상태에서도 read 허용.
+      // settings 에는 민감 정보를 두지 않는다 (코드/토글뿐).
+      allow read:  if true;
       allow write: if isAdmin();
     }
 

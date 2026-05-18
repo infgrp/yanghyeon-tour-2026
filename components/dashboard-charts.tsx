@@ -7,7 +7,8 @@ import {
 import type { Student } from "@/types";
 
 const PIE_COLORS = ["#3b82f6", "#e5e7eb"]; // 가입 / 미가입
-const BAR_COLORS = ["#60a5fa", "#a78bfa", "#34d399"]; // 학년 1, 2, 3
+// 학년 1, 2, 3, 4, 5, 6 — 6학년까지 색상 정의 (그 이상은 modulo)
+const BAR_COLORS = ["#60a5fa", "#a78bfa", "#34d399", "#f59e0b", "#f472b6", "#22d3ee"];
 
 interface Props {
   students: Student[];

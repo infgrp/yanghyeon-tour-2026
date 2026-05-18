@@ -399,9 +399,9 @@ export default function StudentPage() {
                         <span className="text-sm text-gray-800">{c.이름}</span>
                         <a
                           href={`tel:${c.연락처.replace(/-/g, "")}`}
-                          className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs px-3 py-1.5 rounded-lg font-medium hover:bg-emerald-100 transition-colors"
+                          className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-100 active:scale-95 transition-all min-h-[44px]"
                         >
-                          <Phone className="w-3 h-3" />
+                          <Phone className="w-4 h-4" />
                           {c.연락처}
                         </a>
                       </div>

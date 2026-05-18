@@ -54,6 +54,8 @@ function SessionCard({ session, uid, totalStudents }: {
   }, [session.id]);
 
   useEffect(() => {
+    // session 객체가 갱신되면 (예: +10분 연장) 즉시 새 endAt 으로 갱신
+    setRemaining(timeLeft(session));
     const id = setInterval(() => setRemaining(timeLeft(session)), 1000);
     return () => clearInterval(id);
   }, [session]);

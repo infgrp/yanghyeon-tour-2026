@@ -296,12 +296,16 @@ function IncidentCard({ incident, students, onClose }: {
         )}
 
         {!incident.종결여부 && (
-          <Button size="sm" variant="outline"
-            className="w-full border-green-300 text-green-600 hover:bg-green-50 mt-1"
-            onClick={handleClose} disabled={closing}>
+          <Button size="sm"
+            className="w-full bg-green-600 hover:bg-green-700 text-white mt-1 min-h-[40px] font-semibold"
+            onClick={() => {
+              if (!confirm(`이 사건사고를 종결 처리할까요?\n\n종결 후에는 "종결된 건" 영역으로 이동합니다.`)) return;
+              handleClose();
+            }}
+            disabled={closing}>
             {closing
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
-              : <CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
+              ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+              : <CheckCircle2 className="w-4 h-4 mr-1.5" />}
             종결 처리
           </Button>
         )}
