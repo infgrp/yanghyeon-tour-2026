@@ -3,10 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   User, Bus, Hotel, Plane, CheckCircle2, Clock, Phone,
   AlertTriangle, LogOut, QrCode, Loader2, Calendar, MessageCircle, Heart,
@@ -18,6 +17,7 @@ import { getStudent, subscribeOpenSessions, getStudentTodayCheckins, createCheck
 import type { Student, CheckinSession, Checkin, Contact } from "@/types";
 import { FadeStaggerContainer, FadeStaggerItem } from "@/components/motion-presets";
 import { StudentPageSkeleton } from "@/components/ui/skeleton";
+import { ActionCard, SectionHeader } from "@/components/action-card";
 
 function sessionApplies(session: CheckinSession, student: Student): boolean {
   const scope = session.scope;
@@ -244,7 +244,19 @@ export default function StudentPage() {
       </header>
 
       <FadeStaggerContainer className="max-w-lg mx-auto px-4 py-5 space-y-4">
-        {/* 내 정보 */}
+        {/* 1) 진행 중 점호 — 가장 위 (있을 때만 prominent) */}
+        {mySessions.length > 0 && (
+          <FadeStaggerItem>
+            <SectionHeader title="지금 점호 중" subtitle={`${mySessions.length}건 진행 중`} />
+            <div className="space-y-2">
+              {mySessions.map((s) => (
+                <CheckinCard key={s.id} session={s} student={student!} uid={user.uid} checkins={checkins} />
+              ))}
+            </div>
+          </FadeStaggerItem>
+        )}
+
+        {/* 2) 내 정보 */}
         {student && (
           <FadeStaggerItem><Card className="border-blue-100 shadow-sm overflow-hidden">
             <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 px-5 py-4 text-white">
@@ -289,132 +301,53 @@ export default function StudentPage() {
           </Card></FadeStaggerItem>
         )}
 
-        {/* 바로가기 */}
-        <FadeStaggerItem><div className="grid grid-cols-2 gap-3">
-          <Link href="/schedule">
-            <div className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm hover:border-blue-300 hover:shadow-md transition-all">
-              <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
-                <Calendar className="w-4.5 h-4.5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">여행 일정</p>
-                <p className="text-xs text-gray-400">일차별 일정</p>
-              </div>
-            </div>
-          </Link>
-          <Link href="/contacts">
-            <div className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm hover:border-emerald-300 hover:shadow-md transition-all">
-              <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
-                <Phone className="w-4.5 h-4.5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">비상 연락처</p>
-                <p className="text-xs text-gray-400">긴급 연락처</p>
-              </div>
-            </div>
-          </Link>
-          <Link href="/chat" className="col-span-2">
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm hover:border-amber-300 hover:shadow-md transition-all">
-              <div className="w-9 h-9 bg-white/70 rounded-xl flex items-center justify-center shrink-0">
-                <MessageCircle className="w-4.5 h-4.5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">공지방</p>
-                <p className="text-xs text-gray-500">담임·관리자 선생님 공지 수신</p>
-              </div>
-            </div>
-          </Link>
-        </div></FadeStaggerItem>
+        {/* 3) 바로가기 — 3개 핵심 액션 */}
+        <FadeStaggerItem>
+          <SectionHeader title="바로가기" />
+          <div className="grid grid-cols-3 gap-2">
+            <ActionCard href="/chat" tone="amber" icon={MessageCircle} label="공지방" desc="공지 수신" />
+            <ActionCard href="/schedule" tone="blue" icon={Calendar} label="여행 일정" desc="일차별" />
+            <ActionCard href="/contacts" tone="green" icon={Phone} label="비상 연락처" desc="긴급" />
+          </div>
+        </FadeStaggerItem>
 
-        {/* 진행 중 점호 */}
-        <FadeStaggerItem><Card className="bg-white border-gray-200 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2 text-gray-900">
-              <Clock className="w-4 h-4 text-amber-500" /> 진행 중인 점호
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {mySessions.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-4">현재 진행 중인 점호가 없습니다.</p>
-            ) : (
-              mySessions.map((s) => (
-                <CheckinCard
-                  key={s.id}
-                  session={s}
-                  student={student!}
-                  uid={user.uid}
-                  checkins={checkins}
-                />
-              ))
-            )}
-          </CardContent>
-        </Card></FadeStaggerItem>
-
-        {/* 오늘 점호 이력 */}
-        <FadeStaggerItem><Card className="bg-white border-gray-200 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2 text-gray-900">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> 오늘 점호 이력
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {checkins.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-4">오늘 점호 기록이 없습니다.</p>
-            ) : (
-              <div className="space-y-1.5">
-                {checkins.map((c) => {
-                  const method = c.method === "SELF_TAP" ? "자가 확인" : c.method === "TEACHER_TAP" ? "선생님 확인" : "QR 승차";
-                  const ts = c.timestamp.toDate();
-                  const timeStr = `${ts.getHours().toString().padStart(2, "0")}:${ts.getMinutes().toString().padStart(2, "0")}`;
-                  return (
-                    <div key={c.id} className="flex items-center justify-between text-sm py-2 px-2 rounded-lg bg-emerald-50/40 border border-emerald-100">
-                      <div className="flex items-center gap-2 text-gray-700">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                        <span>{method}</span>
-                      </div>
-                      <span className="text-gray-400 text-xs font-mono">{timeStr}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card></FadeStaggerItem>
-
-        {/* 비상 연락처 */}
-        {contacts.length > 0 && (
-          <FadeStaggerItem><Card className="bg-white border-gray-200 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2 text-gray-900">
-                <Phone className="w-4 h-4 text-emerald-500" /> 비상 연락처
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {Object.entries(contactGroups).map(([group, list]) => (
-                <div key={group}>
-                  <p className="text-xs text-gray-500 mb-2 font-medium">{group}</p>
-                  <div className="space-y-1.5">
-                    {list.map((c) => (
-                      <div key={c.id} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-800">{c.이름}</span>
-                        <a
-                          href={`tel:${c.연락처.replace(/-/g, "")}`}
-                          className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-100 active:scale-95 transition-all min-h-[44px]"
-                        >
-                          <Phone className="w-4 h-4" />
-                          {c.연락처}
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                  <Separator className="mt-3 bg-gray-100" />
-                </div>
-              ))}
-            </CardContent>
-          </Card></FadeStaggerItem>
+        {/* 4) 진행 점호 없을 때 안내 */}
+        {mySessions.length === 0 && (
+          <FadeStaggerItem>
+            <Card className="bg-white border-gray-200 border-dashed shadow-sm">
+              <CardContent className="py-6 text-center text-gray-400">
+                <Clock className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">현재 진행 중인 점호가 없습니다.</p>
+                <p className="text-xs mt-1">점호 시간이 되면 자동으로 알림이 표시됩니다.</p>
+              </CardContent>
+            </Card>
+          </FadeStaggerItem>
         )}
 
-        {/* SOS */}
+        {/* 5) 오늘 점호 이력 — 있을 때만 */}
+        {checkins.length > 0 && (
+          <FadeStaggerItem>
+            <SectionHeader title="오늘 점호" subtitle={`${checkins.length}건 완료`} />
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm divide-y divide-gray-100 overflow-hidden">
+              {checkins.map((c) => {
+                const method = c.method === "SELF_TAP" ? "자가 확인" : c.method === "TEACHER_TAP" ? "선생님 확인" : "QR 승차";
+                const ts = c.timestamp.toDate();
+                const timeStr = `${ts.getHours().toString().padStart(2, "0")}:${ts.getMinutes().toString().padStart(2, "0")}`;
+                return (
+                  <div key={c.id} className="flex items-center justify-between text-sm py-2.5 px-3">
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>{method}</span>
+                    </div>
+                    <span className="text-gray-400 text-xs font-mono">{timeStr}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </FadeStaggerItem>
+        )}
+
+        {/* 6) SOS — 항상 하단 */}
         <FadeStaggerItem><div className="pb-4 pt-2">
           <a href="tel:119">
             <Button className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold py-6 text-lg shadow-lg shadow-red-200">

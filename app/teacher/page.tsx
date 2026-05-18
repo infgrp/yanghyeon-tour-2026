@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ClipboardList, Search, AlertTriangle, LogOut, Loader2,
-  Users, Clock, Plus, ChevronRight, XCircle, GraduationCap, Bus, Hotel, Calendar, Phone,
+  Clock, Plus, ChevronRight, XCircle, GraduationCap, Bus, Hotel, Calendar, Phone,
   MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { FadeStaggerContainer, FadeStaggerItem } from "@/components/motion-presets";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { MiniDonut } from "@/components/mini-donut";
+import { ActionCard, SectionHeader } from "@/components/action-card";
 
 
 function timeLeft(session: CheckinSession): string {
@@ -333,111 +334,54 @@ export default function TeacherPage() {
           );
         })()}
 
-        <FadeStaggerItem><div className="grid grid-cols-2 gap-3">
-          <Link href="/teacher/search">
-            <Card className="bg-white border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">
-              <CardContent className="pt-5 pb-4 flex flex-col items-center gap-2">
-                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                  <Search className="w-5 h-5 text-blue-600" />
-                </div>
-                <p className="font-medium text-sm text-gray-900">학생 검색</p>
-                <p className="text-xs text-gray-400">이름·번호로 조회</p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/teacher/incident">
-            <Card className="bg-white border-gray-200 shadow-sm hover:border-red-400 hover:shadow-md transition-all cursor-pointer">
-              <CardContent className="pt-5 pb-4 flex flex-col items-center gap-2">
-                <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-red-500" />
-                </div>
-                <p className="font-medium text-sm text-gray-900">사건사고 등록</p>
-                <p className="text-xs text-gray-400">인시던트 기록</p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/teacher/rooms">
-            <Card className="bg-white border-gray-200 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer">
-              <CardContent className="pt-5 pb-4 flex flex-col items-center gap-2">
-                <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
-                  <Hotel className="w-5 h-5 text-indigo-600" />
-                </div>
-                <p className="font-medium text-sm text-gray-900">숙소 배정</p>
-                <p className="text-xs text-gray-400">호실별 학생 조회</p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/schedule">
-            <Card className="bg-white border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">
-              <CardContent className="pt-5 pb-4 flex flex-col items-center gap-2">
-                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-blue-600" />
-                </div>
-                <p className="font-medium text-sm text-gray-900">여행 일정</p>
-                <p className="text-xs text-gray-400">일차별 일정표</p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/contacts">
-            <Card className="bg-white border-gray-200 shadow-sm hover:border-green-400 hover:shadow-md transition-all cursor-pointer">
-              <CardContent className="pt-5 pb-4 flex flex-col items-center gap-2">
-                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                  <Phone className="w-5 h-5 text-green-600" />
-                </div>
-                <p className="font-medium text-sm text-gray-900">비상 연락처</p>
-                <p className="text-xs text-gray-400">긴급 연락처 조회</p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/chat">
-            <Card className="bg-white border-gray-200 shadow-sm hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
-              <CardContent className="pt-5 pb-4 flex flex-col items-center gap-2">
-                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5 text-amber-600" />
-                </div>
-                <p className="font-medium text-sm text-gray-900">채팅</p>
-                <p className="text-xs text-gray-400">교사·반·학생</p>
-              </CardContent>
-            </Card>
-          </Link>
-        </div></FadeStaggerItem>
-
-        <FadeStaggerItem><Card className="bg-white border-gray-200 shadow-sm">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2 text-gray-900">
-                <Clock className="w-4 h-4 text-amber-500" /> 진행 중인 점호
-              </CardTitle>
-              <Badge variant="outline" className="border-gray-300 text-gray-500">{sessions.length}개</Badge>
+        {/* 진행 중인 점호 — 가장 prominent (있을 때만 표시) */}
+        {sessions.length > 0 && (
+          <FadeStaggerItem>
+            <SectionHeader title="진행 중인 점호" subtitle={`${sessions.length}개 활성`} />
+            <div className="space-y-2">
+              {sessions.map((s) => (
+                <SessionCard key={s.id} session={s} uid={user.uid} totalStudents={totalStudents} />
+              ))}
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {sessions.length === 0 ? (
-              <div className="text-center py-6 text-gray-400">
+          </FadeStaggerItem>
+        )}
+
+        {/* 핵심 액션 — 4개 grid */}
+        <FadeStaggerItem>
+          <SectionHeader title="자주 쓰는 액션" />
+          <div className="grid grid-cols-2 gap-2">
+            <ActionCard href="/teacher/search" tone="blue" icon={Search}
+              label="학생 검색" desc="이름·번호 조회" />
+            <ActionCard href="/teacher/incident" tone="red" icon={AlertTriangle}
+              label="사건사고 등록" desc="인시던트 기록" />
+            <ActionCard href="/teacher/boarding" tone="indigo" icon={Bus}
+              label="승차 현황" desc="호차·반별 실시간" />
+            <ActionCard href="/chat" tone="amber" icon={MessageCircle}
+              label="채팅" desc="공지 송수신" />
+          </div>
+        </FadeStaggerItem>
+
+        {/* 보조 메뉴 */}
+        <FadeStaggerItem>
+          <SectionHeader title="조회" />
+          <div className="grid grid-cols-3 gap-2">
+            <ActionCard href="/teacher/rooms" tone="indigo" icon={Hotel} label="숙소 배정" />
+            <ActionCard href="/schedule" tone="blue" icon={Calendar} label="여행 일정" />
+            <ActionCard href="/contacts" tone="green" icon={Phone} label="비상 연락처" />
+          </div>
+        </FadeStaggerItem>
+
+        {/* 진행 중 점호가 없을 때 안내 */}
+        {sessions.length === 0 && (
+          <FadeStaggerItem>
+            <Card className="bg-white border-gray-200 border-dashed shadow-sm">
+              <CardContent className="py-6 text-center text-gray-400">
                 <Clock className="w-8 h-8 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">진행 중인 점호가 없습니다.</p>
                 <p className="text-xs mt-1">상단 &quot;점호 시작&quot; 버튼으로 수동 점호를 시작하세요.</p>
-              </div>
-            ) : (
-              sessions.map((s) => (
-                <SessionCard key={s.id} session={s} uid={user.uid} totalStudents={totalStudents} />
-              ))
-            )}
-          </CardContent>
-        </Card></FadeStaggerItem>
-
-        {sessions.length > 0 && (
-          <FadeStaggerItem><Link href={`/teacher/checkin?session=${sessions[0].id}`}>
-            <Card className="bg-white border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">
-              <CardContent className="py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-700">전체 점호 현황 보기</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-400" />
               </CardContent>
             </Card>
-          </Link></FadeStaggerItem>
+          </FadeStaggerItem>
         )}
       </FadeStaggerContainer>
     </div>

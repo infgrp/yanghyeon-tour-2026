@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Users, Upload, Settings, LogOut, Loader2, Shield, QrCode,
-  AlertTriangle, CheckCircle2, Clock, ChevronRight, Key, Printer,
+  AlertTriangle, CheckCircle2, Clock, ChevronRight, Key,
   ToggleLeft, ToggleRight, Plus, X, Search, GraduationCap, Timer, Bus, Calendar, Phone,
   MessageCircle, Megaphone, Send,
 } from "lucide-react";
@@ -31,6 +31,7 @@ import { useAutoCheckin } from "@/lib/use-auto-checkin";
 import { FadeStaggerContainer, FadeStaggerItem } from "@/components/motion-presets";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { EnrollmentCharts, ClassDistribution } from "@/components/dashboard-charts";
+import { ActionCard, SectionHeader } from "@/components/action-card";
 import { printBusQRs } from "@/lib/qr";
 import type {
   Student, Incident, CheckinSession, GlobalSettings, SessionScope, AppUser,
@@ -296,20 +297,20 @@ function BroadcastDialog({ students }: { students: Student[] }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={
-        <Card className="bg-white border-gray-200 shadow-sm hover:border-amber-400 hover:shadow-md transition-all cursor-pointer" />
+        <button type="button" className="block w-full text-left" />
       }>
-        <CardContent className="py-3 flex items-center justify-between">
+        <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-4 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center">
-              <Megaphone className="w-5 h-5 text-amber-600" />
+            <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+              <Megaphone className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <p className="font-medium text-sm text-gray-900">공지 일괄 발송</p>
-              <p className="text-xs text-gray-500">여러 반에 한 번에 메시지 전송</p>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-white text-sm leading-tight">공지 일괄 발송</p>
+              <p className="text-[11px] text-white/80 mt-0.5">여러 반에 한 번에</p>
             </div>
+            <ChevronRight className="w-4 h-4 text-white/70 shrink-0" />
           </div>
-          <ChevronRight className="w-4 h-4 text-gray-400" />
-        </CardContent>
+        </div>
       </DialogTrigger>
 
       <DialogContent className="bg-white border-gray-200 text-gray-900 max-w-md">
@@ -427,193 +428,102 @@ function DashboardTab({ students, incidents, sessions, onPrintQR, printingQR }: 
   const registered = students.filter((s) => s.uid).length;
   const openIncidents = incidents.filter((i) => !i.종결여부).length;
 
+  const activeSession = sessions[0];
+
   return (
     <FadeStaggerContainer className="space-y-5">
-      <FadeStaggerItem><div className="grid grid-cols-2 gap-3">
+      {/* 1) 진행 중 점호 — 가장 prominent */}
+      {activeSession && (
+        <FadeStaggerItem>
+          <Link href={`/teacher/checkin?session=${activeSession.id}`}>
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 shadow-md hover:shadow-lg transition-shadow">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-white animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-white text-sm">{activeSession.name}</p>
+                    <p className="text-xs text-white/80">
+                      {activeSession.type} · {activeSession.scope}
+                      {sessions.length > 1 && ` · +${sessions.length - 1}건 더`}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-white/80" />
+              </div>
+            </div>
+          </Link>
+        </FadeStaggerItem>
+      )}
+
+      {/* 2) 통계 4종 */}
+      <FadeStaggerItem><div className="grid grid-cols-2 gap-2">
         <StatCard label="전체 학생" value={students.length} sub={`가입 ${registered}명`}
           color="text-blue-600" bg="bg-blue-50" icon={Users} />
-        <StatCard label="진행 중 점호" value={sessions.length} sub="활성 세션"
+        <StatCard label="진행 점호" value={sessions.length} sub="활성 세션"
           color="text-amber-500" bg="bg-amber-50" icon={Clock} />
         <StatCard label="미처리 사건" value={openIncidents} sub="건"
           color={openIncidents > 0 ? "text-red-500" : "text-gray-400"}
           bg={openIncidents > 0 ? "bg-red-50" : "bg-gray-50"} icon={AlertTriangle} />
-        <StatCard label="전체 사건" value={incidents.length} sub="누적"
+        <StatCard label="누적 사건" value={incidents.length} sub="전체"
           color="text-gray-500" bg="bg-gray-100" icon={CheckCircle2} />
       </div></FadeStaggerItem>
 
-      {/* 차트 섹션 — 가입률 + 학년별 + 반별 분포 */}
+      {/* 3) 핵심 운영 액션 (primary) */}
       <FadeStaggerItem>
+        <SectionHeader title="운영" subtitle="자주 쓰는 액션" />
+        <div className="grid grid-cols-1 gap-2.5">
+          <BroadcastDialog students={students} />
+          <ActionCard
+            href="/teacher/incident"
+            variant="primary"
+            tone={openIncidents > 0 ? "red" : "slate"}
+            icon={AlertTriangle}
+            label="사건사고 관리"
+            desc={openIncidents > 0 ? `미처리 ${openIncidents}건` : "모두 처리됨"}
+            badge={openIncidents > 0 ? String(openIncidents) : undefined}
+          />
+          <ActionCard
+            href="/teacher/boarding"
+            variant="primary"
+            tone="blue"
+            icon={Bus}
+            label="승차 현황 모니터링"
+            desc="전체 반 실시간"
+          />
+        </div>
+      </FadeStaggerItem>
+
+      {/* 4) 차트 */}
+      <FadeStaggerItem>
+        <SectionHeader title="현황" subtitle="가입·학년별 통계" />
         <EnrollmentCharts students={students} />
       </FadeStaggerItem>
       <FadeStaggerItem>
         <ClassDistribution students={students} />
       </FadeStaggerItem>
 
-      {sessions.length > 0 && (
-        <FadeStaggerItem><div>
-          <p className="text-sm font-semibold text-gray-700 mb-2">진행 중인 점호</p>
-          <div className="space-y-2">
-            {sessions.slice(0, 2).map((s) => {
-              const min = Math.max(0, Math.round((s.endAt.toDate().getTime() - Date.now()) / 60000));
-              return (
-                <div key={s.id} className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{s.name}</p>
-                    <p className="text-xs text-gray-500">{s.scope} · {min}분 남음</p>
-                  </div>
-                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                </div>
-              );
-            })}
-          </div>
-        </div></FadeStaggerItem>
-      )}
+      {/* 5) 보조 메뉴 (secondary 그리드) */}
+      <FadeStaggerItem>
+        <SectionHeader title="조회·소통" />
+        <div className="grid grid-cols-4 gap-2">
+          <ActionCard href="/chat" tone="amber" icon={MessageCircle} label="채팅" />
+          <ActionCard href="/schedule" tone="blue" icon={Calendar} label="일정" />
+          <ActionCard href="/contacts" tone="green" icon={Phone} label="연락처" />
+          <ActionCard href="/teacher/checkin?session=latest" tone="indigo" icon={CheckCircle2} label="점호 뷰" />
+        </div>
+      </FadeStaggerItem>
 
-      <FadeStaggerItem><div className="space-y-2">
-        <p className="text-sm font-semibold text-gray-700">바로가기</p>
-
-        <Link href="/schedule">
-          <Card className="bg-white border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">
-            <CardContent className="py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm text-gray-900">여행 일정</p>
-                  <p className="text-xs text-gray-500">일차별 일정표</p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/contacts">
-          <Card className="bg-white border-gray-200 shadow-sm hover:border-green-400 hover:shadow-md transition-all cursor-pointer">
-            <CardContent className="py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center">
-                  <Phone className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm text-gray-900">비상 연락처</p>
-                  <p className="text-xs text-gray-500">긴급 연락처 조회</p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </CardContent>
-          </Card>
-        </Link>
-
-        <BroadcastDialog students={students} />
-
-        <Link href="/chat">
-          <Card className="bg-white border-gray-200 shadow-sm hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
-            <CardContent className="py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm text-gray-900">채팅</p>
-                  <p className="text-xs text-gray-500">교사·반별·학생 메시지</p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/teacher/boarding">
-          <Card className="bg-white border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">
-            <CardContent className="py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <Bus className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm text-gray-900">승차 현황 모니터링</p>
-                  <p className="text-xs text-gray-500">전체 반 탑승 실시간 현황</p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/admin/upload">
-          <Card className="bg-white border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">
-            <CardContent className="py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <Upload className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm text-gray-900">Excel 데이터 업로드</p>
-                  <p className="text-xs text-gray-500">학생·호실·일정·버스·연락처</p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Card className="bg-white border-gray-200 shadow-sm">
-          <CardContent className="py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center">
-                <QrCode className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="font-medium text-sm text-gray-900">버스 QR 인쇄</p>
-                <p className="text-xs text-gray-500">호차별 QR 코드 출력</p>
-              </div>
-            </div>
-            <Button size="sm" variant="outline"
-              className="border-green-400 text-green-600 hover:bg-green-50"
-              onClick={onPrintQR} disabled={printingQR}>
-              {printingQR ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Link href="/teacher/checkin?session=latest">
-          <Card className="bg-white border-gray-200 shadow-sm hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
-            <CardContent className="py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm text-gray-900">점호 현황 보기</p>
-                  <p className="text-xs text-gray-500">교사 점호 뷰로 이동</p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/teacher/incident">
-          <Card className="bg-white border-gray-200 shadow-sm hover:border-red-400 hover:shadow-md transition-all cursor-pointer">
-            <CardContent className="py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-red-500" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm text-gray-900">사건사고 관리</p>
-                  <p className="text-xs text-gray-500">
-                    {openIncidents > 0 ? `미처리 ${openIncidents}건` : "모두 처리됨"}
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </CardContent>
-          </Card>
-        </Link>
-      </div></FadeStaggerItem>
+      {/* 6) 데이터 관리 */}
+      <FadeStaggerItem>
+        <SectionHeader title="데이터 관리" subtitle="업로드·인쇄" />
+        <div className="grid grid-cols-2 gap-2">
+          <ActionCard href="/admin/upload" tone="blue" icon={Upload} label="Excel 업로드" desc="학생·호실·일정" />
+          <ActionCard onClick={onPrintQR} disabled={printingQR} tone="green" icon={QrCode}
+            label={printingQR ? "준비 중..." : "버스 QR 인쇄"} desc="호차별 출력" />
+        </div>
+      </FadeStaggerItem>
     </FadeStaggerContainer>
   );
 }
