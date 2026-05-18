@@ -253,16 +253,14 @@ export default function BoardingPage() {
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
       <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-sky-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+          {/* 헤더 ←: 항상 홈으로 (selectedClass 와 무관) */}
           <Button size="sm" variant="ghost" className="text-gray-500 p-1"
-            onClick={() => {
-              if (selectedClass !== null) setSelectedClass(null);
-              else router.push(backHref);
-            }}>
+            onClick={() => router.push(backHref)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-gray-900">
-              {selectedClass !== null ? `${selectedClass}반 미승차 학생` : "승차 현황"}
+              승차 현황{selectedClass !== null ? ` — ${selectedClass}반` : ""}
             </p>
             {boardingSession && (
               <p className="text-xs text-gray-400 truncate">
@@ -299,11 +297,22 @@ export default function BoardingPage() {
             <p className="font-medium text-gray-500">진행 중인 승차점호가 없습니다.</p>
           </div>
         ) : selectedClass !== null && selectedClassData ? (
-          <ClassDetail
-            classNum={selectedClass}
-            students={selectedClassData.students}
-            checkedIds={checkedIds}
-          />
+          <div className="space-y-3">
+            {/* 반별 상세 → 전체 그리드로 돌아가는 별도 링크 */}
+            <button
+              type="button"
+              onClick={() => setSelectedClass(null)}
+              className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              전체 반 보기
+            </button>
+            <ClassDetail
+              classNum={selectedClass}
+              students={selectedClassData.students}
+              checkedIds={checkedIds}
+            />
+          </div>
         ) : inBusView ? (
           // ── 호차별 좌석 뷰 ─────────────────────────────────
           <div className="space-y-4">
