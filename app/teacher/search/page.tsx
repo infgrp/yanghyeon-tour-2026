@@ -227,7 +227,7 @@ export default function TeacherSearchPage() {
         <div className="max-w-2xl mx-auto px-4 py-3 space-y-2">
           <div className="flex items-center gap-3">
             <Button size="sm" variant="ghost" className="text-gray-500 p-1"
-              onClick={() => router.push("/teacher")}>
+              onClick={() => router.push(role === "admin" ? "/admin" : "/teacher")}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <span className="font-bold text-gray-900">학생 검색</span>

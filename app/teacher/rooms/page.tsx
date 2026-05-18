@@ -130,7 +130,7 @@ export default function TeacherRoomsPage() {
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <Button size="sm" variant="ghost" className="text-gray-500 p-1"
-            onClick={() => router.push("/teacher")}>
+            onClick={() => router.push(role === "admin" ? "/admin" : "/teacher")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
