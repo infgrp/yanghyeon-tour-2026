@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, Search, User, Phone, AlertTriangle,
-  Loader2, ChevronDown, ChevronUp, Heart,
+  Loader2, ChevronDown, Heart,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -82,38 +82,66 @@ function StudentDetail({ student }: { student: Student }) {
   );
 }
 
+// 학년별 아바타 배경색 — 시각적 구분
+function avatarStyle(학년: number, 반: number) {
+  const palette = [
+    { bg: "bg-blue-100", text: "text-blue-700" },
+    { bg: "bg-purple-100", text: "text-purple-700" },
+    { bg: "bg-emerald-100", text: "text-emerald-700" },
+    { bg: "bg-amber-100", text: "text-amber-700" },
+    { bg: "bg-rose-100", text: "text-rose-700" },
+    { bg: "bg-cyan-100", text: "text-cyan-700" },
+  ];
+  return palette[(학년 * 7 + 반) % palette.length];
+}
+
 function StudentCard({ student }: { student: Student }) {
   const [expanded, setExpanded] = useState(false);
+  const avatar = avatarStyle(student.학년, student.반);
+  const isCaution = student.요양호여부 || !!student.건강요주의사항;
 
   return (
-    <Card className="bg-white border-gray-200 shadow-sm">
+    <Card className={`bg-white shadow-sm transition-all duration-200 cursor-pointer ${
+      expanded
+        ? "border-blue-300 shadow-md ring-2 ring-blue-100"
+        : "border-gray-200 hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5"
+    }`}>
       <CardContent className="pt-4 pb-3">
         <button className="w-full text-left" onClick={() => setExpanded(!expanded)}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-sm font-bold text-blue-600">
+              <div className={`relative w-11 h-11 rounded-full ${avatar.bg} flex items-center justify-center text-base font-bold ${avatar.text} ring-2 ring-white shadow-sm`}>
                 {student.이름.charAt(0)}
+                {isCaution && (
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-amber-400 rounded-full ring-2 ring-white flex items-center justify-center">
+                    <Heart className="w-2 h-2 text-white" fill="white" />
+                  </span>
+                )}
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="font-semibold text-gray-900">{student.이름}</span>
                   {student.요양호여부 && (
-                    <Badge className="text-xs bg-red-50 text-red-600 border-red-200 py-0 px-1.5">요양호</Badge>
+                    <Badge className="text-[10px] bg-red-50 text-red-600 border-red-200 py-0 px-1.5 leading-tight">요양호</Badge>
+                  )}
+                  {student.잔류여부 && (
+                    <Badge className="text-[10px] bg-gray-100 text-gray-600 border-gray-300 py-0 px-1.5 leading-tight">잔류</Badge>
                   )}
                 </div>
-                <p className="text-xs text-gray-400">
-                  {student.학년}학년 {student.반}반 {student.번호}번
+                <p className="text-xs text-gray-400 mt-0.5">
+                  <span className="font-mono">{student.학년}-{student.반}-{student.번호}</span>
+                  <span className="ml-1.5">{student.학년}학년 {student.반}반 {student.번호}번</span>
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <div className="text-right">
-                <p className="text-xs text-gray-500">{student.호실}</p>
-                <p className="text-xs text-gray-400">{student.호차}호차</p>
+                <p className="text-xs text-gray-700 font-semibold">{student.호실}</p>
+                <p className="text-[11px] text-gray-400">{student.호차}호차</p>
               </div>
-              {expanded
-                ? <ChevronUp className="w-4 h-4 text-gray-400" />
-                : <ChevronDown className="w-4 h-4 text-gray-400" />}
+              <div className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}>
+                <ChevronDown className="w-4 h-4 text-gray-400" />
+              </div>
             </div>
           </div>
         </button>
@@ -195,8 +223,8 @@ export default function TeacherSearchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
+      <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-sky-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 space-y-2">
           <div className="flex items-center gap-3">
             <Link href="/teacher">
