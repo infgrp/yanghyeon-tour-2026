@@ -13,8 +13,8 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { signOut } from "@/lib/auth";
-import { getStudent, subscribeOpenSessions, getStudentTodayCheckins, createCheckin, getPublicContacts } from "@/lib/firestore";
-import type { Student, CheckinSession, Checkin, Contact } from "@/types";
+import { getStudent, subscribeOpenSessions, getStudentTodayCheckins, createCheckin } from "@/lib/firestore";
+import type { Student, CheckinSession, Checkin } from "@/types";
 import { FadeStaggerContainer, FadeStaggerItem } from "@/components/motion-presets";
 import { StudentPageSkeleton } from "@/components/ui/skeleton";
 import { ActionCard, SectionHeader } from "@/components/action-card";
@@ -138,7 +138,6 @@ export default function StudentPage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [sessions, setSessions] = useState<CheckinSession[]>([]);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
-  const [contacts, setContacts] = useState<Contact[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
@@ -152,27 +151,39 @@ export default function StudentPage() {
 
   const loadData = useCallback(async () => {
     if (!appUser?.studentRef || !user) return;
-    try {
-      const studentId = appUser.studentRef.split("/").pop()!;
-      const [s, c, pubContacts] = await Promise.all([
-        getStudent(studentId),
-        getStudentTodayCheckins(appUser.studentRef),
-        getPublicContacts(),
-      ]);
-      setStudent(s);
-      setCheckins(c);
-      setContacts(pubContacts);
-    } catch (err) {
-      console.error("student loadData error:", err);
-      const msg = err instanceof Error ? err.message : String(err);
+    const studentId = appUser.studentRef.split("/").pop()!;
+    // 각 호출이 독립적으로 실패해도 다른 데이터는 표시되도록
+    // Promise.all 대신 allSettled 사용 + 개별 catch.
+    const [sRes, cRes] = await Promise.allSettled([
+      getStudent(studentId),
+      getStudentTodayCheckins(appUser.studentRef),
+    ]);
+
+    if (sRes.status === "fulfilled") {
+      setStudent(sRes.value);
+    } else {
+      console.error("student load failed:", sRes.reason);
+    }
+
+    if (cRes.status === "fulfilled") {
+      setCheckins(cRes.value);
+    } else {
+      console.error("checkins load failed:", cRes.reason);
+      // 점호 이력은 권한 거부 시 빈 배열로 두고 silent fail
+      setCheckins([]);
+    }
+
+    // 전체 실패 (예: 학생 doc 자체 없음) 시에만 에러 toast
+    if (sRes.status === "rejected") {
+      const msg = sRes.reason instanceof Error ? sRes.reason.message : String(sRes.reason);
       if (msg.includes("permission-denied") || msg.includes("insufficient")) {
         toast.error("권한 오류입니다. 로그아웃 후 다시 로그인해주세요.");
       } else {
-        toast.error("데이터 로드 실패: " + msg);
+        toast.error("학생 정보 로드 실패: " + msg);
       }
-    } finally {
-      setDataLoading(false);
     }
+
+    setDataLoading(false);
   }, [appUser, user]);
 
   useEffect(() => {
@@ -213,12 +224,6 @@ export default function StudentPage() {
   const mySessions = student
     ? sessions.filter((s) => sessionApplies(s, student))
     : [];
-
-  const contactGroups: Record<string, Contact[]> = {};
-  contacts.forEach((c) => {
-    if (!contactGroups[c.구분]) contactGroups[c.구분] = [];
-    contactGroups[c.구분].push(c);
-  });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50 text-gray-900">

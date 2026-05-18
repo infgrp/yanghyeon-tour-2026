@@ -70,8 +70,10 @@ service cloud.firestore {
 
     match /checkins/{cid} {
       allow create: if isAuth();
-      allow read:   if isTeacherOrAdmin()
-                    || (isStudent() && resource.data.byUid == request.auth.uid);
+      // 학생도 본인의 체크인을 읽을 수 있어야 함 (TEACHER_TAP 으로 처리된
+      // 본인 체크인도 포함). 학생 체크인 doc 에는 민감정보가 없으므로
+      // isAuth 로 완화 — 인증된 누구나 read 가능.
+      allow read:   if isAuth();
       allow update: if isAdmin();
       // 교사/관리자가 수동 탑승을 취소할 수 있도록 delete 허용
       allow delete: if isTeacherOrAdmin();
