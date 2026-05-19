@@ -26,69 +26,6 @@ function timeLeft(session: CheckinSession): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-// ── 반별 미승차 상세 ────────────────────────────────────────────
-function ClassDetail({
-  classNum, students, checkedIds,
-}: {
-  classNum: number;
-  students: Student[];
-  checkedIds: Set<string>;
-}) {
-  const unchecked = students.filter((s) => !checkedIds.has(s.id));
-  const checkedCount = students.length - unchecked.length;
-
-  if (unchecked.length === 0) {
-    return (
-      <div className="text-center py-16">
-        <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto mb-3" />
-        <p className="font-bold text-green-600 text-xl">전원 승차 완료!</p>
-        <p className="text-sm text-gray-400 mt-1">{students.length}명 모두 탑승했습니다.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between px-1">
-        <p className="text-sm font-semibold text-red-500">미승차 {unchecked.length}명</p>
-        <p className="text-sm text-green-600">승차완료 {checkedCount}명</p>
-      </div>
-      {unchecked.map((student) => (
-        <div key={student.id}
-          className="bg-white border border-red-200 rounded-xl p-3 space-y-2.5">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center text-xs font-bold text-red-500">
-              {student.번호}
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">{student.이름}</p>
-              <p className="text-xs text-gray-400">
-                {student.학년}학년 {student.반}반 {student.번호}번 · {student.호실}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {student.학생연락처 ? (
-              <a href={`tel:${student.학생연락처.replace(/-/g, "")}`}
-                className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-green-50 border border-green-200 text-green-700 py-2 rounded-lg font-medium">
-                <Phone className="w-3.5 h-3.5" /> 학생 {student.학생연락처}
-              </a>
-            ) : <div className="flex-1" />}
-            {student.보호자연락처 ? (
-              <a href={`tel:${student.보호자연락처.replace(/-/g, "")}`}
-                className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-blue-50 border border-blue-200 text-blue-700 py-2 rounded-lg font-medium">
-                <Phone className="w-3.5 h-3.5" /> 보호자 {student.보호자연락처}
-              </a>
-            ) : <div className="flex-1" />}
-          </div>
-        </div>
-      ))}
-      <p className="text-xs text-gray-400 text-center pt-2">
-        {classNum}반 · 전체 {students.length}명
-      </p>
-    </div>
-  );
-}
 
 export default function BoardingPage() {
   const { user, appUser, role, loading } = useAuth();
@@ -194,6 +131,13 @@ export default function BoardingPage() {
     ? classes.find((c) => c.반 === selectedClass) ?? null
     : null;
 
+  const selectedBus = useMemo(
+    () => (selectedClass !== null
+      ? buses.find((b) => Number(b.탑승반) === selectedClass) ?? null
+      : null),
+    [buses, selectedClass],
+  );
+
   const backHref = role === "admin" ? "/admin" : "/teacher";
 
   // 수동 탑승 toggle 핸들러
@@ -298,7 +242,6 @@ export default function BoardingPage() {
           </div>
         ) : selectedClass !== null && selectedClassData ? (
           <div className="space-y-3">
-            {/* 반별 상세 → 전체 그리드로 돌아가는 별도 링크 */}
             <button
               type="button"
               onClick={() => setSelectedClass(null)}
@@ -307,11 +250,59 @@ export default function BoardingPage() {
               <ArrowLeft className="w-4 h-4" />
               전체 반 보기
             </button>
-            <ClassDetail
-              classNum={selectedClass}
+
+            {/* 버스 좌석 배치도 */}
+            <BusSeatGrid
+              busNumber={selectedBus?.호차 ?? selectedClass}
               students={selectedClassData.students}
               checkedIds={checkedIds}
+              guideName={selectedBus?.인솔교사1}
+              driverName={selectedBus?.기사명}
+              onSeatClick={handleSeatToggle}
+              disabled={isExpired || !!working}
             />
+
+            {/* 미탑승 학생 연락처 */}
+            {(() => {
+              const unchecked = selectedClassData.students.filter((s) => !checkedIds.has(s.id));
+              if (unchecked.length === 0) return null;
+              return (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-red-500 px-1">
+                    미탑승 {unchecked.length}명 연락처
+                  </p>
+                  {unchecked.map((student) => (
+                    <div key={student.id} className="bg-white border border-red-200 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center text-xs font-bold text-red-500">
+                          {student.번호}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{student.이름}</p>
+                          <p className="text-xs text-gray-400">
+                            {student.학년}학년 {student.반}반 {student.번호}번
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {student.학생연락처 ? (
+                          <a href={`tel:${student.학생연락처.replace(/-/g, "")}`}
+                            className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-green-50 border border-green-200 text-green-700 py-2 rounded-lg font-medium">
+                            <Phone className="w-3.5 h-3.5" /> 학생 {student.학생연락처}
+                          </a>
+                        ) : <div className="flex-1" />}
+                        {student.보호자연락처 ? (
+                          <a href={`tel:${student.보호자연락처.replace(/-/g, "")}`}
+                            className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-blue-50 border border-blue-200 text-blue-700 py-2 rounded-lg font-medium">
+                            <Phone className="w-3.5 h-3.5" /> 보호자 {student.보호자연락처}
+                          </a>
+                        ) : <div className="flex-1" />}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         ) : inBusView ? (
           // ── 호차별 좌석 뷰 ─────────────────────────────────
