@@ -39,10 +39,11 @@ function timeLeft(session: CheckinSession): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function SessionCard({ session, uid, totalStudents }: {
+function SessionCard({ session, uid, totalStudents, isAdmin }: {
   session: CheckinSession;
   uid: string;
   totalStudents: number;
+  isAdmin?: boolean;
 }) {
   const router = useRouter();
   const [checkins, setCheckins] = useState<Checkin[]>([]);
@@ -112,14 +113,18 @@ function SessionCard({ session, uid, totalStudents }: {
           onClick={() => router.push(`/teacher/checkin?session=${session.id}`)}>
           <ClipboardList className="w-3.5 h-3.5 mr-1.5" /> 점호 현황
         </Button>
-        <Button size="sm" variant="outline" className="border-blue-300 text-blue-600 hover:bg-blue-50"
-          onClick={handleExtend} disabled={extending}>
-          {extending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "+10분"}
-        </Button>
-        <Button size="sm" variant="outline" className="border-red-300 text-red-500 hover:bg-red-50"
-          onClick={handleClose} disabled={closing}>
-          {closing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
-        </Button>
+        {isAdmin && (
+          <>
+            <Button size="sm" variant="outline" className="border-blue-300 text-blue-600 hover:bg-blue-50"
+              onClick={handleExtend} disabled={extending}>
+              {extending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "+10분"}
+            </Button>
+            <Button size="sm" variant="outline" className="border-red-300 text-red-500 hover:bg-red-50"
+              onClick={handleClose} disabled={closing}>
+              {closing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -298,7 +303,7 @@ export default function TeacherPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <CreateSessionDialog uid={user.uid} />
+            {role === "admin" && <CreateSessionDialog uid={user.uid} />}
             <Button size="sm" variant="ghost"
               onClick={async () => { await signOut(); router.replace("/login"); }}
               className="text-gray-400 hover:text-gray-700">
@@ -310,7 +315,7 @@ export default function TeacherPage() {
 
       <FadeStaggerContainer className="max-w-2xl mx-auto px-4 py-5 space-y-5">
         {/* 내 반 점호 현황 — 진행 중인 세션이 있고 담임반이 설정된 경우에만 표시 */}
-        {appUser?.담임반 && sessions.length > 0 && (() => {
+        {sessions.length > 0 && (role === "admin" || appUser?.담임반) && (() => {
           const current = sessions[0];
           const isBus = current.type === "승차점호";
           return (
@@ -325,7 +330,9 @@ export default function TeacherPage() {
                   <div>
                     <p className="font-bold text-white text-sm">{current.name}</p>
                     <p className="text-xs text-white/70">
-                      {appUser.담임학년 ? `${appUser.담임학년}학년 ` : ""}{appUser.담임반}반 · 실시간 모니터링
+                      {role === "admin"
+                        ? "전체 현황 · 실시간 모니터링"
+                        : `${appUser?.담임학년 ? `${appUser.담임학년}학년 ` : ""}${appUser?.담임반}반 · 실시간 모니터링`}
                     </p>
                   </div>
                 </div>
@@ -341,7 +348,7 @@ export default function TeacherPage() {
             <SectionHeader title="진행 중인 점호" subtitle={`${sessions.length}개 활성`} />
             <div className="space-y-2">
               {sessions.map((s) => (
-                <SessionCard key={s.id} session={s} uid={user.uid} totalStudents={totalStudents} />
+                <SessionCard key={s.id} session={s} uid={user.uid} totalStudents={totalStudents} isAdmin={role === "admin"} />
               ))}
             </div>
           </FadeStaggerItem>
