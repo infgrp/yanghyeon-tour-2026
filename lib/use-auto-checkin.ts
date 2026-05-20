@@ -21,6 +21,7 @@ import {
   query, where, Timestamp, writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { notifyCheckinSession } from "./notify";
 
 interface AutoCheckinOptions {
   uid: string | undefined;
@@ -140,19 +141,23 @@ async function maybeCreateAutoSessions(params: {
     if (existSnap && !existSnap.empty) continue;
 
     const endAt = new Date(nowKst.getTime() + graceMinutes * 60_000);
-    await addDoc(collection(db, "checkin_sessions"), {
+    const sessionName = `${data.일정명 ?? "자동점호"} (${dayIdx}일차)`;
+    const docRef = await addDoc(collection(db, "checkin_sessions"), {
       eventRef: `/schedule/${sDoc.id}`,
       type: data.점호유형,
       scope: "전체",
       trigger: "auto",
-      name: `${data.일정명 ?? "자동점호"} (${dayIdx}일차)`,
+      name: sessionName,
       startAt: Timestamp.fromDate(nowKst),
       endAt: Timestamp.fromDate(endAt),
       status: "open",
       openedBy: uid,
       openedAt: Timestamp.fromDate(nowKst),
-    }).catch((e) => console.warn("[auto-checkin] addDoc failed:", e));
+    }).catch((e) => { console.warn("[auto-checkin] addDoc failed:", e); return null; });
 
+    if (docRef) {
+      notifyCheckinSession({ sessionId: docRef.id, type: String(data.점호유형), name: sessionName, scope: "전체" });
+    }
     console.log(`[auto-checkin] created: ${data.일정명} day=${dayIdx} ${hhmm}`);
   }
 }

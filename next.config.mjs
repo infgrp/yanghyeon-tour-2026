@@ -12,6 +12,10 @@ const pwaConfig = withPWA({
 });
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  experimental: {
+    serverComponentsExternalPackages: ["firebase-admin"],
+  },
+};
 
 export default pwaConfig(nextConfig);

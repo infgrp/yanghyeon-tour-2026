@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { signOut } from "@/lib/auth";
+import { notifyCheckinSession } from "@/lib/notify";
 import {
   getStudents, getIncidents, subscribeOpenSessions,
   getSettings, updateSettings, resetStudentUid,
@@ -76,13 +77,15 @@ function CreateSessionDialog({ onCreated }: { onCreated: () => void }) {
       if (scopeType !== "전체" && scopeValue.trim()) {
         scope = `${scopeType}:${scopeValue.trim()}` as SessionScope;
       }
-      await createManualSession({
+      const sessionName = name.trim() || `${type} ${new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`;
+      const sessionId = await createManualSession({
         type,
         scope,
-        name: name.trim() || `${type} ${new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`,
+        name: sessionName,
         durationMinutes: duration,
         openedBy: user!.uid,
       });
+      notifyCheckinSession({ sessionId, type, name: sessionName, scope });
       toast.success("점호 세션이 생성되었습니다.");
       setOpen(false);
       setName(""); setScopeValue(""); setScopeType("전체");

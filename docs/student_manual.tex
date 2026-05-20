@@ -1,0 +1,253 @@
+%!TEX program = xelatex
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{kotex}
+\usepackage[margin=2.5cm, top=3cm, bottom=3cm]{geometry}
+\usepackage{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{fontspec}
+
+% ── 색상 정의 ──────────────────────────────────────────────────────
+\definecolor{primary}{RGB}{37, 99, 235}      % blue-600
+\definecolor{green}{RGB}{22, 163, 74}        % green-600
+\definecolor{amber}{RGB}{217, 119, 6}        % amber-600
+\definecolor{red}{RGB}{220, 38, 38}          % red-600
+\definecolor{lightblue}{RGB}{239, 246, 255}  % blue-50
+\definecolor{lightgreen}{RGB}{240, 253, 244} % green-50
+\definecolor{lightamber}{RGB}{255, 251, 235} % amber-50
+\definecolor{lightgray}{RGB}{249, 250, 251}  % gray-50
+
+% ── 섹션 스타일 ────────────────────────────────────────────────────
+\titleformat{\section}
+  {\Large\bfseries\color{primary}}
+  {\thesection.}{0.5em}{}[\vspace{-0.3em}\color{primary}\rule{\linewidth}{1pt}]
+
+\titleformat{\subsection}
+  {\normalsize\bfseries\color{black}}
+  {\thesubsection}{0.5em}{}
+
+% ── 박스 스타일 ────────────────────────────────────────────────────
+\tcbset{
+  tipbox/.style={
+    colback=lightblue, colframe=primary, fonttitle=\bfseries\small,
+    title={\faIcon{lightbulb}\quad 도움말}, arc=3pt, boxrule=0.5pt,
+    left=6pt, right=6pt, top=5pt, bottom=5pt
+  },
+  warnbox/.style={
+    colback=lightamber, colframe=amber, fonttitle=\bfseries\small,
+    title={주의}, arc=3pt, boxrule=0.5pt,
+    left=6pt, right=6pt, top=5pt, bottom=5pt
+  },
+  stepbox/.style={
+    colback=lightgreen, colframe=green, arc=3pt, boxrule=0.5pt,
+    left=6pt, right=6pt, top=5pt, bottom=5pt
+  }
+}
+
+% ── 헤더/푸터 ──────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{gray} 양현고 수학여행 앱}
+\fancyhead[R]{\small\color{gray} 학생 사용자 매뉴얼}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── 목록 설정 ──────────────────────────────────────────────────────
+\setlist[enumerate]{leftmargin=1.5em, itemsep=2pt}
+\setlist[itemize]{leftmargin=1.5em, itemsep=2pt, label={\textcolor{primary}{$\bullet$}}}
+
+% ──────────────────────────────────────────────────────────────────
+\begin{document}
+
+% ── 표지 ──────────────────────────────────────────────────────────
+\begin{titlepage}
+  \centering
+  \vspace*{3cm}
+  {\Huge\bfseries\color{primary} 양현고 수학여행 앱}\par\vspace{0.5cm}
+  {\LARGE 학생 사용자 매뉴얼}\par\vspace{1cm}
+  \textcolor{gray}{\rule{8cm}{0.5pt}}\par\vspace{1cm}
+  {\large 2026 수학여행 현장 관리 시스템}\par\vspace{0.5cm}
+  {\normalsize\color{gray} v1.0 · 2026년 5월}\par
+  \vfill
+  \begin{tcolorbox}[colback=lightblue, colframe=primary, arc=6pt,
+    boxrule=1pt, width=10cm]
+    \centering
+    \textbf{접속 주소}\par\vspace{0.3em}
+    {\large\color{primary}\texttt{yanghyeon-tour-2026.vercel.app}}
+  \end{tcolorbox}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ──────────────────────────────────────────────────────────────────
+\section{시작하기}
+
+\subsection{앱 접속 및 로그인}
+
+수학여행 앱은 별도 설치 없이 스마트폰 브라우저에서 접속하는 웹앱입니다.
+
+\begin{enumerate}
+  \item 스마트폰 브라우저에서 \textbf{\texttt{yanghyeon-tour-2026.vercel.app}} 접속
+  \item 로그인 화면에서 \textbf{학번(이메일 형식)} 및 \textbf{비밀번호} 입력
+  \item 처음 사용하는 경우 담임 선생님께 받은 계정 정보로 로그인
+\end{enumerate}
+
+\begin{tcolorbox}[warnbox]
+로그인 후 자동으로 \textbf{학생 포털}로 이동합니다. 만약 다른 화면이 나타나면 담임 선생님께 문의하세요.
+\end{tcolorbox}
+
+% ──────────────────────────────────────────────────────────────────
+\section{홈 화면 (학생 포털)}
+
+로그인하면 학생 포털 홈 화면이 나타납니다.
+
+\subsection{내 정보 카드}
+
+화면 상단에 내 기본 정보가 표시됩니다.
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+  \toprule
+  \textbf{항목} & \textbf{내용} & \textbf{비고} \\
+  \midrule
+  이름 / 학년·반·번호 & 본인 신상 정보 & \\
+  호차 & 탑승 버스 번호 & 승차 점호 시 참고 \\
+  호실 & 숙소 방 번호 & 야간 점호 시 참고 \\
+  비행편 & 항공편 정보 & 해당 시 표시 \\
+  건강 / 특이사항 & 요주의 사항 & 노란색 박스로 강조 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{점호 카드 (지금 점호 중)}
+
+진행 중인 점호가 있으면 홈 화면 최상단에 \textbf{점호 카드}가 표시됩니다.
+
+\begin{itemize}
+  \item \textbf{초록색 배지 「완료」}: 이미 점호가 완료된 상태
+  \item \textbf{주황색 배지 「X분 Y초」}: 아직 점호 전, 남은 시간 카운트다운 표시
+\end{itemize}
+
+\subsection{오늘 점호 이력}
+
+오늘 완료된 점호 목록이 홈 화면 하단에 표시됩니다.
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+  \toprule
+  \textbf{방법} & \textbf{의미} \\
+  \midrule
+  자가 확인 & 학생이 직접 앱에서 버튼을 눌러 완료 \\
+  선생님 확인 & 담임 선생님이 대신 점호 처리 \\
+  QR 승차 & 버스 QR 코드를 스캔하여 승차 확인 완료 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+% ──────────────────────────────────────────────────────────────────
+\section{점호 방법}
+
+\subsection{정시점호 (야간 취침 점호)}
+
+숙소에서 이루어지는 정해진 시간의 점호입니다.
+
+\begin{tcolorbox}[stepbox]
+\begin{enumerate}
+  \item 홈 화면에 \textbf{점호 카드}가 표시되면 확인
+  \item 카드 안의 \textbf{「점호 확인」 버튼} 클릭
+  \item 완료되면 배지가 「완료」로 바뀌고 초록색으로 변경
+\end{enumerate}
+\end{tcolorbox}
+
+\begin{tcolorbox}[warnbox]
+\textbf{시간 안에 점호하지 않으면 미점호 처리됩니다.} 남은 시간이 표시되므로 미리 점호하세요. 담임 선생님이 직접 점호 처리를 해줄 수 있습니다.
+\end{tcolorbox}
+
+\subsection{승차점호 (버스 탑승 확인)}
+
+버스 탑승 시 이루어지는 점호입니다. \textbf{QR 코드 스캔}으로 진행합니다.
+
+\begin{tcolorbox}[stepbox]
+\begin{enumerate}
+  \item 홈 화면에 승차점호 카드가 표시되면 \textbf{「QR 스캔으로 승차 확인」} 버튼 클릭
+  \item 카메라가 실행되면 버스에 부착된 \textbf{QR 코드에 카메라를 향함}
+  \item QR 인식 후 자동으로 탑승 처리 완료
+\end{enumerate}
+\end{tcolorbox}
+
+\begin{tcolorbox}[warnbox]
+QR 스캔이 되지 않을 경우 담임 선생님께 말씀드리면 수동으로 탑승 처리해 드립니다.
+QR 스캔은 담당 버스에서만 인식됩니다. 다른 반의 버스에서는 처리되지 않습니다.
+\end{tcolorbox}
+
+% ──────────────────────────────────────────────────────────────────
+\section{바로가기 메뉴}
+
+홈 화면 하단의 \textbf{바로가기} 섹션에서 주요 기능에 접근할 수 있습니다.
+
+\subsection{공지방 (채팅)}
+
+\begin{itemize}
+  \item 담임 선생님과 관리자가 보내는 공지를 받아볼 수 있습니다.
+  \item 학생은 \textbf{읽기만 가능}합니다. (메시지 작성 불가)
+  \item 앱을 열지 않아도 중요 공지는 \textbf{푸시 알림}으로 전송됩니다.
+\end{itemize}
+
+\subsection{여행 일정}
+
+\begin{itemize}
+  \item \textbf{1일차 / 2일차 / 3일차 / 4일차} 탭으로 구분되어 표시
+  \item 각 일정에 \textbf{장소, 시작 시각, 종료 시각, 비고} 확인 가능
+  \item \textbf{「간략히 / 자세히」} 버튼으로 상세 정보 표시 여부 조절 가능
+  \item 점호가 있는 일정은 색상 배지로 표시 (초록: 정시점호, 파랑: 승차점호)
+\end{itemize}
+
+\subsection{비상 연락처}
+
+\begin{itemize}
+  \item 여행 중 필요한 비상 연락처 목록 확인
+  \item 전화번호 옆 \textbf{전화 버튼}을 누르면 바로 전화 연결
+  \item 구분(병원, 경찰서, 학교 등)별로 그룹화되어 표시
+\end{itemize}
+
+% ──────────────────────────────────────────────────────────────────
+\section{긴급 신고}
+
+홈 화면 맨 아래 \textbf{빨간색 「긴급 신고 (119)」 버튼}을 누르면 즉시 119에 전화 연결됩니다.
+
+\begin{tcolorbox}[warnbox]
+\textbf{위급 상황 발생 시:}
+\begin{enumerate}
+  \item 즉시 인솔 담임 선생님께 알리세요.
+  \item 119 긴급 신고 버튼을 눌러 신고하세요.
+  \item 비상 연락처에서 관련 기관에 연락하세요.
+\end{enumerate}
+\end{tcolorbox}
+
+% ──────────────────────────────────────────────────────────────────
+\section{자주 묻는 질문}
+
+\begin{description}[leftmargin=0pt, style=nextline]
+  \item[\textbf{Q. 로그인이 안 됩니다.}]
+    담임 선생님 또는 관리자에게 계정 확인을 요청하세요. 비밀번호를 잊어버렸다면 담임 선생님을 통해 재설정 요청이 가능합니다.
+
+  \item[\textbf{Q. 점호 카드가 나타나지 않습니다.}]
+    현재 진행 중인 점호가 없거나, 대상 범위에 포함되지 않은 것입니다. 앱을 새로 고침(페이지 당겨내리기)하거나 선생님께 확인하세요.
+
+  \item[\textbf{Q. QR 스캔이 인식되지 않습니다.}]
+    카메라 권한을 허용했는지 확인하세요. 허용 후에도 안 되면 담임 선생님께 말씀드려 수동 처리를 받으세요.
+
+  \item[\textbf{Q. 공지 알림이 오지 않습니다.}]
+    브라우저 알림 권한을 허용했는지 확인하세요. 앱을 열면 최신 공지를 확인할 수 있습니다.
+
+  \item[\textbf{Q. 내 정보가 틀립니다.}]
+    내 정보는 학교에서 등록한 데이터를 기반으로 합니다. 오류가 있으면 담임 선생님께 문의하세요.
+\end{description}
+
+\end{document}
