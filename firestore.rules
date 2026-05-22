@@ -19,9 +19,11 @@ service cloud.firestore {
     }
 
     match /students/{sid} {
-      // 가입 전 학번 조회를 위해 read는 누구나 허용
-      // (학교 내부 시스템 가정 — 노출 위험 감수)
-      allow read: if true;
+      // 교사/관리자: 전체 학생 데이터 읽기
+      // 학생 본인: 본인 문서만 읽기 (학생 포털 자기 정보 표시용)
+      // 가입 전 학번 조회는 /api/auth/lookup-student API Route로 처리 (전화번호 제외)
+      allow read: if isTeacherOrAdmin()
+                  || (isAuth() && resource.data.uid == request.auth.uid);
 
       // 일반 쓰기는 admin만
       allow write: if isAdmin();

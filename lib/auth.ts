@@ -24,13 +24,13 @@ export async function getUserRole(user: User): Promise<UserRole | null> {
 }
 
 // ── 학생 학번 조회 (가입 전 이름 확인용) ──────────────────────
-// firestore.rules에서 students read는 누구나 허용됨
+// API Route를 통해 조회 — 전화번호 등 민감 정보는 서버에서 제거 후 반환
 export async function lookupStudent(학년: number, 반: number, 번호: number) {
-  const studentId = `G${학년}-C${반}-N${번호}`;
-  const snap = await getDoc(doc(db, "students", studentId));
-  if (!snap.exists()) return null;
-  const data = snap.data();
-  return { id: studentId, 이름: data.이름 as string, 가입됨: !!data.uid };
+  const res = await fetch(`/api/auth/lookup-student?학년=${학년}&반=${반}&번호=${번호}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.found) return null;
+  return { id: data.id as string, 이름: data.이름 as string, 가입됨: data.가입됨 as boolean };
 }
 
 // ── 학생 가입 ─────────────────────────────────────────────────
@@ -50,19 +50,22 @@ export async function registerStudent(params: {
   const { 학년, 반, 번호, email, password } = params;
   const studentId = `G${학년}-C${반}-N${번호}`;
 
-  // 1) 학생 존재 + 미가입 확인
-  const studentRef = doc(db, "students", studentId);
-  const studentSnap = await getDoc(studentRef);
-  if (!studentSnap.exists()) {
+  // 1) 학생 존재 + 미가입 확인 — API Route로 조회 (전화번호 노출 방지)
+  const lookupRes = await fetch(`/api/auth/lookup-student?학년=${학년}&반=${반}&번호=${번호}`);
+  if (!lookupRes.ok) {
+    return { success: false, error: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요." };
+  }
+  const lookupData = await lookupRes.json();
+  if (!lookupData.found) {
     return { success: false, error: "해당 학번의 학생을 찾을 수 없습니다." };
   }
-  const studentData = studentSnap.data();
-  if (studentData.uid) {
+  if (lookupData.가입됨) {
     return {
       success: false,
       error: "이미 가입된 학번입니다. 도용 의심 시 관리자에게 문의하세요.",
     };
   }
+  const studentRef = doc(db, "students", studentId);
 
   // 2) Firebase Auth 가입
   const cred = await createUserWithEmailAndPassword(auth, email, password);
@@ -79,7 +82,7 @@ export async function registerStudent(params: {
   // 4) /students/{id}.uid 업데이트 — rules에서 본인 가입에만 허용됨
   await updateDoc(studentRef, { uid });
 
-  return { success: true, studentName: studentData.이름 as string };
+  return { success: true, studentName: lookupData.이름 as string };
 }
 
 // ── 교사 가입 ─────────────────────────────────────────────────
