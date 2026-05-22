@@ -43,6 +43,7 @@ export function BusBoardingBanner({ students, sessions }: BusBoardingBannerProps
       setCheckins(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Checkin))),
     );
     return unsub;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardingSession?.id]);
 
   const busRows = useMemo<BusRow[]>(() => {

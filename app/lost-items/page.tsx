@@ -12,7 +12,6 @@ import {
   subscribeLostItems, createLostItem, updateLostItemStatus, deleteLostItem,
 } from "@/lib/firestore";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import type { LostItem, LostItemStatus } from "@/types";
 
 const STATUS_LABEL: Record<LostItemStatus, string> = {

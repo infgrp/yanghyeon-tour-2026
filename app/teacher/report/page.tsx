@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { CheckCircle, XCircle, ChevronLeft, RefreshCw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { CheckinSession, Checkin, Student } from "@/types";
+import type { CheckinSession, Student } from "@/types";
 
 interface SessionReport {
   session: CheckinSession;
@@ -33,7 +33,7 @@ function pct(checked: number, total: number) {
 }
 
 export default function ReportPage() {
-  const { user, appUser } = useAuth();
+  const { appUser } = useAuth();
   const router = useRouter();
 
   const [sessions, setSessions] = useState<SessionReport[]>([]);
