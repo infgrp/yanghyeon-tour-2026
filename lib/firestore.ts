@@ -35,6 +35,8 @@ import type {
   ChatMessage,
   ChatRoomRead,
   UserRole,
+  LostItem,
+  LostItemStatus,
 } from "@/types";
 
 // ── Students ──────────────────────────────────────────────────
@@ -687,6 +689,42 @@ export async function removeUserFcmToken(uid: string, token: string) {
   await updateDoc(doc(db, "users", uid), {
     fcmTokens: arrayRemove(token),
   }).catch(() => { /* 문서 없거나 권한 없으면 무시 */ });
+}
+
+// ── Lost Items ────────────────────────────────────────────────
+export function subscribeLostItems(cb: (items: LostItem[]) => void) {
+  const q = query(
+    collection(db, "lost_items"),
+    orderBy("timestamp", "desc"),
+  );
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() } as LostItem))),
+  );
+}
+
+export async function createLostItem(data: Omit<LostItem, "id" | "timestamp">) {
+  await addDoc(collection(db, "lost_items"), {
+    ...data,
+    timestamp: serverTimestamp(),
+  });
+}
+
+export async function updateLostItemStatus(
+  id: string,
+  status: LostItemStatus,
+  resolvedBy?: string,
+) {
+  await updateDoc(doc(db, "lost_items", id), {
+    status,
+    ...(status === "returned"
+      ? { resolvedAt: serverTimestamp(), resolvedBy: resolvedBy ?? null }
+      : {}),
+  });
+}
+
+export async function deleteLostItem(id: string) {
+  const { deleteDoc } = await import("firebase/firestore");
+  await deleteDoc(doc(db, "lost_items", id));
 }
 
 // ── Admin: 버스 인솔교사1 → 담임반 동기화 ─────────────────────

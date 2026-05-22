@@ -153,6 +153,22 @@ export type CheckinStatus =
   | "MISSING"
   | "LOCKED";
 
+// ── LostItem ──────────────────────────────────────────────────
+export type LostItemStatus = "lost" | "found" | "returned";
+
+export interface LostItem {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  status: LostItemStatus;
+  reportedBy: string;   // uid
+  reporterName: string;
+  timestamp: Timestamp;
+  resolvedAt?: Timestamp;
+  resolvedBy?: string;
+}
+
 // ── Chat ──────────────────────────────────────────────────────
 // admin_teachers: 관리자·교사 양방향
 // class:          담임·관리자 → 반 학생들 일방향(공지)  — 학생은 읽기 전용

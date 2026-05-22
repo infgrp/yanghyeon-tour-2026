@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   User, Bus, Hotel, Plane, CheckCircle2, Clock, Phone,
   AlertTriangle, LogOut, QrCode, Loader2, Calendar, MessageCircle, Heart,
+  PackageSearch,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -308,10 +309,11 @@ export default function StudentPage() {
         {/* 3) 바로가기 — 3개 핵심 액션 */}
         <FadeStaggerItem>
           <SectionHeader title="바로가기" />
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <ActionCard href="/chat" tone="amber" icon={MessageCircle} label="공지방" desc="공지 수신" />
             <ActionCard href="/schedule" tone="blue" icon={Calendar} label="여행 일정" desc="일차별" />
             <ActionCard href="/contacts" tone="green" icon={Phone} label="비상 연락처" desc="긴급" />
+            <ActionCard href="/lost-items" tone="purple" icon={PackageSearch} label="분실물" desc="분실·습득 신고" />
           </div>
         </FadeStaggerItem>
 

@@ -21,7 +21,7 @@ import {
   query, where, Timestamp, writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { notifyCheckinSession } from "./notify";
+import { notifyCheckinSession, notifyCheckinReminder } from "./notify";
 
 interface AutoCheckinOptions {
   uid: string | undefined;
@@ -44,6 +44,7 @@ export function useAutoCheckin(opts: AutoCheckinOptions) {
   const interval = opts.intervalMs ?? 60_000;
   const lastMinuteKey = useRef("");
   const busy = useRef(false);
+  const reminderSent = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!enabled || !uid) return;
@@ -56,6 +57,9 @@ export function useAutoCheckin(opts: AutoCheckinOptions) {
 
         // 1) 만료된 open 세션 정리 — 수학여행 기간과 무관하게 항상 실행
         await closeExpiredOpenSessions(uid!);
+
+        // 2) 마감 5분 전 미응답 학생 리마인더 (세션당 1회)
+        await sendPendingReminders(reminderSent.current);
 
         // 2) 자동 점호 세션 생성 — 수학여행 기간 안에서만
         if (nowKst >= tripStart && nowKst <= tripEnd) {
@@ -84,6 +88,28 @@ export function useAutoCheckin(opts: AutoCheckinOptions) {
     const id = setInterval(tick, interval);
     return () => clearInterval(id);
   }, [uid, enabled, tripStart, tripEnd, grace, interval]);
+}
+
+const REMINDER_BEFORE_MS = 5 * 60_000;
+
+async function sendPendingReminders(sent: Set<string>) {
+  const now = Date.now();
+  const snap = await getDocs(query(
+    collection(db, "checkin_sessions"),
+    where("status", "==", "open"),
+  )).catch(() => null);
+  if (!snap || snap.empty) return;
+
+  for (const d of snap.docs) {
+    if (sent.has(d.id)) continue;
+    const endAt = d.data().endAt;
+    if (!endAt?.toMillis) continue;
+    const msLeft = endAt.toMillis() - now;
+    if (msLeft > 0 && msLeft <= REMINDER_BEFORE_MS) {
+      sent.add(d.id);
+      notifyCheckinReminder(d.id);
+    }
+  }
 }
 
 async function closeExpiredOpenSessions(closedBy: string) {

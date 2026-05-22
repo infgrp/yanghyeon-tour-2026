@@ -28,3 +28,25 @@ export function notifyCheckinSession(params: {
     )
     .catch((err) => console.warn("[notify] session push failed:", err));
 }
+
+/**
+ * 미응답 학생에게 점호 마감 전 리마인더 Push를 발송한다.
+ * fire-and-forget. 교사/관리자 토큰으로 호출해야 한다.
+ */
+export function notifyCheckinReminder(sessionId: string): void {
+  const user = getAuth().currentUser;
+  if (!user) return;
+
+  user.getIdToken()
+    .then((token) =>
+      fetch("/api/notify/reminder", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ sessionId }),
+      }),
+    )
+    .catch((err) => console.warn("[notify] reminder push failed:", err));
+}

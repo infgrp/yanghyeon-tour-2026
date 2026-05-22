@@ -91,6 +91,14 @@ service cloud.firestore {
       allow write: if request.auth.uid == uid || isAdmin();
     }
 
+    match /lost_items/{lid} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAuth();
+      allow delete: if isTeacherOrAdmin()
+                    || (isAuth() && resource.data.reportedBy == request.auth.uid);
+    }
+
     match /settings/global {
       // 교사 가입 코드 검증을 위해 가입 전(미인증) 상태에서도 read 허용.
       // settings 에는 민감 정보를 두지 않는다 (코드/토글뿐).

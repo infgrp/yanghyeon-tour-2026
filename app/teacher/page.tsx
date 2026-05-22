@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ClipboardList, Search, AlertTriangle, LogOut, Loader2,
   Clock, Plus, ChevronRight, XCircle, GraduationCap, Bus, Hotel, Calendar, Phone,
-  MessageCircle,
+  MessageCircle, BarChart2, PackageSearch,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -29,6 +29,7 @@ import { FadeStaggerContainer, FadeStaggerItem } from "@/components/motion-prese
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { MiniDonut } from "@/components/mini-donut";
 import { ActionCard, SectionHeader } from "@/components/action-card";
+import { BusBoardingBanner } from "@/components/bus-boarding-banner";
 
 
 function timeLeft(session: CheckinSession): string {
@@ -244,7 +245,8 @@ export default function TeacherPage() {
   const { user, appUser, role, loading } = useAuth();
   const router = useRouter();
   const [sessions, setSessions] = useState<CheckinSession[]>([]);
-  const [totalStudents, setTotalStudents] = useState(0);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const totalStudents = allStudents.length;
 
   useEffect(() => {
     if (loading) return;
@@ -261,7 +263,7 @@ export default function TeacherPage() {
   }, [user]);
 
   useEffect(() => {
-    getStudents().then((s: Student[]) => setTotalStudents(s.length));
+    getStudents().then((s: Student[]) => setAllStudents(s));
   }, []);
 
   // user가 null이면 (로그아웃 직후 redirect 대기 중) render 가드
@@ -342,6 +344,13 @@ export default function TeacherPage() {
           );
         })()}
 
+        {/* 호차별 탑승률 배너 — 승차점호 세션이 열려있을 때만 */}
+        {sessions.some((s) => s.type === "승차점호") && (
+          <FadeStaggerItem>
+            <BusBoardingBanner students={allStudents} sessions={sessions} />
+          </FadeStaggerItem>
+        )}
+
         {/* 진행 중인 점호 — 가장 prominent (있을 때만 표시) */}
         {sessions.length > 0 && (
           <FadeStaggerItem>
@@ -372,10 +381,12 @@ export default function TeacherPage() {
         {/* 보조 메뉴 */}
         <FadeStaggerItem>
           <SectionHeader title="조회" />
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <ActionCard href="/teacher/rooms" tone="indigo" icon={Hotel} label="숙소 배정" />
             <ActionCard href="/schedule" tone="blue" icon={Calendar} label="여행 일정" />
             <ActionCard href="/contacts" tone="green" icon={Phone} label="비상 연락처" />
+            <ActionCard href="/teacher/report" tone="purple" icon={BarChart2} label="점호 이력" desc="날짜별 결과 조회" />
+            <ActionCard href="/lost-items" tone="amber" icon={PackageSearch} label="분실물 게시판" desc="분실·습득 관리" />
           </div>
         </FadeStaggerItem>
 
