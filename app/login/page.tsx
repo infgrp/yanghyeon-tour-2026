@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Loader2, Home } from "lucide-react";
 import Link from "next/link";
 import { signIn, registerStudent, registerTeacher, lookupStudent } from "@/lib/auth";
 
@@ -427,6 +427,15 @@ export default function LoginPage() {
             </Tabs>
           </div>
         </div>
+
+        {/* 학부모 조회 링크 */}
+        <Link
+          href="/parent"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-blue-200 bg-white/60 hover:bg-white/90 text-blue-700 text-sm font-medium transition-colors shadow-sm"
+        >
+          <Home className="w-4 h-4" />
+          학부모 점호 조회
+        </Link>
 
         <p className="text-center text-xs text-slate-500/80 pb-2">
           양현고등학교 · 2026 수학여행 안전 관리 시스템
