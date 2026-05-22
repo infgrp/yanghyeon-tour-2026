@@ -16,11 +16,11 @@ import {
   Users, Upload, Settings, LogOut, Loader2, Shield, QrCode,
   AlertTriangle, CheckCircle2, Clock, ChevronRight, Key,
   ToggleLeft, ToggleRight, Plus, X, Search, GraduationCap, Timer, Bus, Calendar, Phone,
-  MessageCircle, Megaphone, Send,
+  MessageCircle, Megaphone, Send, Mail,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { signOut } from "@/lib/auth";
+import { signOut, sendStudentPasswordReset } from "@/lib/auth";
 import { notifyCheckinSession } from "@/lib/notify";
 import {
   getStudents, getIncidents, subscribeOpenSessions,
@@ -597,6 +597,7 @@ function StudentsTab({ students }: { students: Student[] }) {
 function TeachersTab() {
   const [teachers, setTeachers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState<string | null>(null);
 
   useEffect(() => {
     getTeachers().then((t) => {
@@ -606,6 +607,19 @@ function TeachersTab() {
       setLoading(false);
     });
   }, []);
+
+  async function handlePasswordReset(t: AppUser) {
+    if (!t.email) { toast.error("이메일 정보가 없습니다."); return; }
+    setResetting(t.uid);
+    try {
+      await sendStudentPasswordReset(t.email);
+      toast.success(`${t.이름 ?? t.email}에게 비밀번호 재설정 이메일을 발송했습니다.`);
+    } catch {
+      toast.error("이메일 발송 실패. 이메일 주소를 확인해주세요.");
+    } finally {
+      setResetting(null);
+    }
+  }
 
   if (loading) return (
     <div className="flex justify-center py-12">
@@ -624,14 +638,27 @@ function TeachersTab() {
           <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center shrink-0">
             <GraduationCap className="w-5 h-5 text-blue-600" />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm text-gray-900">{t.이름 || "(이름 없음)"}</p>
             <p className="text-xs text-gray-500">
               {t.담임학년 && t.담임반
                 ? `${t.담임학년}학년 ${t.담임반}반 담임`
                 : "담임 미지정"}
             </p>
+            {t.email && (
+              <p className="text-xs text-gray-400 mt-0.5 truncate">{t.email}</p>
+            )}
           </div>
+          <Button
+            size="sm" variant="outline"
+            className="shrink-0 h-8 text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+            onClick={() => handlePasswordReset(t)}
+            disabled={resetting === t.uid}
+          >
+            {resetting === t.uid
+              ? <Loader2 className="w-3 h-3 animate-spin" />
+              : <><Mail className="w-3 h-3 mr-1" />비번 재설정</>}
+          </Button>
         </div>
       ))}
     </div>
