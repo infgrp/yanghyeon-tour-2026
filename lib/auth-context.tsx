@@ -69,6 +69,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { cleanup?.(); };
   }, [user]);
 
+  // 로그인 시 채팅방 멤버십 자동 등록 — 학생/교사가 본인이 속해야 할 방의 members 에 자동 추가.
+  // 서버 admin SDK 가 rules 우회. 멱등하므로 매 세션 호출돼도 안전.
+  useEffect(() => {
+    if (!user || !appUser) return;
+    let cancelled = false;
+    user.getIdToken()
+      .then((token) => {
+        if (cancelled) return;
+        return fetch("/api/chat/ensure-membership", {
+          method: "POST",
+          headers: { authorization: `Bearer ${token}` },
+        });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user, appUser]);
+
   return (
     <AuthContext.Provider value={{ user, appUser, role, loading }}>
       {children}
