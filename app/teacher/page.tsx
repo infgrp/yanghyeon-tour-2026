@@ -367,13 +367,13 @@ export default function TeacherPage() {
         <FadeStaggerItem>
           <SectionHeader title="자주 쓰는 액션" />
           <div className="grid grid-cols-2 gap-2">
-            <ActionCard href="/teacher/search" tone="blue" icon={Search}
+            <ActionCard href="/teacher/search" tone="blue" variant="primary" icon={Search}
               label="학생 검색" desc="이름·번호 조회" />
-            <ActionCard href="/teacher/incident" tone="red" icon={AlertTriangle}
+            <ActionCard href="/teacher/incident" tone="red" variant="primary" icon={AlertTriangle}
               label="사건사고 등록" desc="인시던트 기록" />
-            <ActionCard href="/teacher/boarding" tone="indigo" icon={Bus}
+            <ActionCard href="/teacher/boarding" tone="indigo" variant="primary" icon={Bus}
               label="승차 현황" desc="호차·반별 실시간" />
-            <ActionCard href="/chat" tone="amber" icon={MessageCircle}
+            <ActionCard href="/chat" tone="amber" variant="primary" icon={MessageCircle}
               label="채팅" desc="공지 송수신" />
           </div>
         </FadeStaggerItem>

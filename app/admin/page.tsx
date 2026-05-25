@@ -16,7 +16,7 @@ import {
   Users, Upload, Settings, LogOut, Loader2, Shield, QrCode,
   AlertTriangle, CheckCircle2, Clock, ChevronRight, Key,
   ToggleLeft, ToggleRight, Plus, X, Search, GraduationCap, Timer, Bus, Calendar, Phone,
-  MessageCircle, Megaphone, Send, Mail,
+  MessageCircle, Megaphone, Send, Mail, BarChart2, ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -995,26 +995,52 @@ export default function AdminPage() {
 
       <main className="max-w-2xl mx-auto px-4 py-5">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="w-full bg-gray-100 h-10 mb-5 p-1 rounded-xl">
-            <TabsTrigger value="dashboard" className="flex-1 text-xs rounded-lg">대시보드</TabsTrigger>
-            <TabsTrigger value="students" className="flex-1 text-xs rounded-lg">
-              학생
-              {students.length > 0 && (
-                <span className="ml-1 text-[10px] bg-blue-100 text-blue-700 rounded-full px-1.5 leading-4">
-                  {students.length}
-                </span>
-              )}
+          <TabsList className="w-full h-auto mb-5 p-0 bg-transparent flex gap-1.5">
+            <TabsTrigger
+              value="dashboard"
+              className="relative flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border-2 text-[11px] font-semibold transition-all duration-200 bg-white border-gray-200 text-gray-500 shadow-sm hover:border-blue-300 hover:text-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:border-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+            >
+              <BarChart2 className="w-4 h-4" />
+              대시보드
             </TabsTrigger>
-            <TabsTrigger value="teachers" className="flex-1 text-xs rounded-lg">교사</TabsTrigger>
-            <TabsTrigger value="sessions" className="flex-1 text-xs rounded-lg">
-              점호
-              {openSessionCount > 0 && (
-                <span className="ml-1 text-[10px] bg-amber-100 text-amber-700 rounded-full px-1.5 leading-4">
-                  {openSessionCount}
-                </span>
-              )}
+            <TabsTrigger
+              value="students"
+              className="relative flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border-2 text-[11px] font-semibold transition-all duration-200 bg-white border-gray-200 text-gray-500 shadow-sm hover:border-blue-300 hover:text-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:border-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+            >
+              <Users className="w-4 h-4" />
+              <span className="flex items-center gap-0.5">
+                학생
+                {students.length > 0 && (
+                  <span className="text-[9px] opacity-70">({students.length})</span>
+                )}
+              </span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1 text-xs rounded-lg">설정</TabsTrigger>
+            <TabsTrigger
+              value="teachers"
+              className="relative flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border-2 text-[11px] font-semibold transition-all duration-200 bg-white border-gray-200 text-gray-500 shadow-sm hover:border-blue-300 hover:text-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:border-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+            >
+              <GraduationCap className="w-4 h-4" />
+              교사
+            </TabsTrigger>
+            <TabsTrigger
+              value="sessions"
+              className="flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border-2 text-[11px] font-semibold transition-all duration-200 bg-white border-gray-200 text-gray-500 shadow-sm hover:border-amber-300 hover:text-amber-600 data-[state=active]:bg-blue-600 data-[state=active]:border-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+            >
+              <ClipboardList className="w-4 h-4" />
+              <span className="flex items-center gap-0.5">
+                점호
+                {openSessionCount > 0 && (
+                  <span className="text-[9px] opacity-70">({openSessionCount})</span>
+                )}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="settings"
+              className="relative flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border-2 text-[11px] font-semibold transition-all duration-200 bg-white border-gray-200 text-gray-500 shadow-sm hover:border-blue-300 hover:text-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:border-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+            >
+              <Settings className="w-4 h-4" />
+              설정
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard">
