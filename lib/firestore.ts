@@ -50,6 +50,16 @@ export async function getStudent(id: string): Promise<Student | null> {
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as Student) : null;
 }
 
+export async function getStudentsByClass(학년: number, 반: number): Promise<Student[]> {
+  const q = query(
+    collection(db, "students"),
+    where("학년", "==", 학년),
+    where("반", "==", 반),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Student));
+}
+
 export function subscribeStudents(cb: (s: Student[]) => void) {
   return onSnapshot(collection(db, "students"), (snap) =>
     cb(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Student)))

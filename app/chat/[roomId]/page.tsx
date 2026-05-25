@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import {
   getChatRoom, subscribeRoomMessages, sendChatMessage,
-  markRoomAsRead, subscribeRoomReads, getStudent,
+  markRoomAsRead, subscribeRoomReads, getStudent, getStudentsByClass,
 } from "@/lib/firestore";
 import type { ChatRoom, ChatMessage, ChatRoomRead, Student } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -62,6 +62,7 @@ export default function ChatRoomPage() {
   const [reads, setReads] = useState<ChatRoomRead[]>([]);
   const [readsModalMsg, setReadsModalMsg] = useState<ChatMessage | null>(null);
   const [myStudent, setMyStudent] = useState<Student | null>(null);
+  const [classStudents, setClassStudents] = useState<Student[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -97,6 +98,22 @@ export default function ChatRoomPage() {
     const sid = appUser.studentRef.split("/").pop()!;
     getStudent(sid).then(setMyStudent).catch(() => setMyStudent(null));
   }, [role, appUser?.studentRef]);
+
+  // 담임·관리자: 이 반의 전체 학생 명단 로드 (읽음 통계 모집단으로 사용)
+  // 학생이 채팅방을 한 번도 열어본 적 없어도 미열람으로 카운트되도록 한다.
+  useEffect(() => {
+    if (!room || room.type !== "class" || !room.학년 || !room.반) {
+      setClassStudents([]);
+      return;
+    }
+    if (role !== "teacher" && role !== "admin") {
+      setClassStudents([]);
+      return;
+    }
+    getStudentsByClass(room.학년, room.반)
+      .then(setClassStudents)
+      .catch(() => setClassStudents([]));
+  }, [room, role]);
 
   // 진입 시·새 메시지 수신 시 markRoomAsRead
   useEffect(() => {
@@ -176,9 +193,13 @@ export default function ChatRoomPage() {
   const isStudentReadOnly = role === "student";
   const canSeeReads = role === "teacher" || role === "admin";
 
-  // 학생 수신자 (read 통계 모집단) — admin/teacher 본인은 제외
-  const studentReaders = reads.filter((r) => r.role === "student");
-  const studentTotal = studentReaders.length;
+  // 읽음 통계 모집단 = 이 반의 가입(uid 세팅됨) 학생 전체.
+  // 채팅방을 한 번도 열어본 적 없는 학생도 모집단에 포함 — 그러면 자동으로 "안 읽음"으로 카운트됨.
+  const eligibleStudents = classStudents.filter((s) => s.uid);
+  const studentTotal = eligibleStudents.length;
+  // uid → reads 문서 매핑 (per-message readCount 계산용)
+  const readsByUid = new Map<string, ChatRoomRead>();
+  for (const r of reads) { if (r.uid) readsByUid.set(r.uid, r); }
 
   // 날짜 그루핑
   const grouped: Array<{ key: string; date: Date; items: ChatMessage[] }> = [];
@@ -232,11 +253,12 @@ export default function ChatRoomPage() {
                   const sameSender = prev && prev.senderUid === m.senderUid
                     && Math.abs(m.timestamp.toMillis() - prev.timestamp.toMillis()) < 60_000;
 
-                  // 학생 중 이 메시지 이후 lastReadAt이 있는 사람 = 읽음
+                  // 이 반의 가입 학생 중 lastReadAt 이 메시지 시각 이후인 사람 = 읽음
                   let readCount = 0;
                   if (canSeeReads && m.senderRole !== "student") {
-                    for (const r of studentReaders) {
-                      if (r.lastReadAt && r.lastReadAt.toMillis() >= m.timestamp.toMillis()) {
+                    for (const s of eligibleStudents) {
+                      const r = readsByUid.get(s.uid!);
+                      if (r?.lastReadAt && r.lastReadAt.toMillis() >= m.timestamp.toMillis()) {
                         readCount++;
                       }
                     }
@@ -305,25 +327,22 @@ export default function ChatRoomPage() {
           </DialogHeader>
           {readsModalMsg && (() => {
             const sent = readsModalMsg.timestamp.toMillis();
-            const read = studentReaders
-              .filter((r) => r.lastReadAt && r.lastReadAt.toMillis() >= sent)
-              .sort((a, b) =>
+            const sortByNumber = (arr: Student[]) =>
+              [...arr].sort((a, b) =>
                 ((a.학년 ?? 0) - (b.학년 ?? 0))
                 || ((a.반 ?? 0) - (b.반 ?? 0))
                 || ((a.번호 ?? 0) - (b.번호 ?? 0))
               );
-            const unread = studentReaders
-              .filter((r) => !r.lastReadAt || r.lastReadAt.toMillis() < sent)
-              .sort((a, b) =>
-                ((a.학년 ?? 0) - (b.학년 ?? 0))
-                || ((a.반 ?? 0) - (b.반 ?? 0))
-                || ((a.번호 ?? 0) - (b.번호 ?? 0))
-              );
-            const fmt = (r: ChatRoomRead) => {
-              const num = r.학년 != null && r.반 != null && r.번호 != null
-                ? `${r.학년}-${r.반}-${r.번호}` : "";
-              return { num, name: r.name ?? "(이름 없음)" };
+            const isRead = (s: Student) => {
+              const r = readsByUid.get(s.uid!);
+              return !!(r?.lastReadAt && r.lastReadAt.toMillis() >= sent);
             };
+            const read = sortByNumber(eligibleStudents.filter(isRead));
+            const unread = sortByNumber(eligibleStudents.filter((s) => !isRead(s)));
+            const fmt = (r: Student) => ({
+              num: `${r.학년}-${r.반}-${r.번호}`,
+              name: r.이름 || "(이름 없음)",
+            });
             return (
               <div className="space-y-4 mt-1 max-h-[60vh] overflow-y-auto">
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
