@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Eye, EyeOff, Loader2, Home } from "lucide-react";
 import Link from "next/link";
 import { signIn, registerStudent, registerTeacher, lookupStudent } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
 
 
 // ── 공통: 비밀번호 입력 필드 ────────────────────────────────
@@ -318,6 +319,31 @@ function TeacherRegisterForm() {
 
 // ── 메인 페이지 ──────────────────────────────────────────────
 export default function LoginPage() {
+  const router = useRouter();
+  const { user, role, loading } = useAuth();
+
+  // 이미 로그인된 상태로 /login 에 진입하면 본인 역할 페이지로 보냄
+  // (PWA 홈 화면 아이콘에서 /login 으로 진입했을 때 다시 로그인하는 것처럼 보이는 문제 방지)
+  useEffect(() => {
+    if (loading || !user) return;
+    if (role === "admin") router.replace("/admin");
+    else if (role === "teacher") router.replace("/teacher");
+    else router.replace("/student");
+  }, [user, role, loading, router]);
+
+  if (loading || user) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{
+          background: "linear-gradient(160deg, #e0f2fe 0%, #dbeafe 50%, #ede9fe 100%)",
+        }}
+      >
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden"
       style={{
