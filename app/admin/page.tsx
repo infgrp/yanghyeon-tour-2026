@@ -17,6 +17,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, ChevronRight, ChevronLeft, Key,
   ToggleLeft, ToggleRight, Plus, X, Search, GraduationCap, Timer, Bus as BusIcon, Calendar, Phone,
   MessageCircle, Megaphone, Send, Mail, BarChart2, ClipboardList, Share2,
+  PackageSearch, Trash2, MapPin,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -34,8 +35,9 @@ import { SkeletonCard } from "@/components/ui/skeleton";
 import { EnrollmentCharts, ClassDistribution } from "@/components/dashboard-charts";
 import { ActionCard, SectionHeader } from "@/components/action-card";
 import { generateBusQrDataUrl } from "@/lib/qr";
+import { subscribeLostItems, updateLostItemStatus, deleteLostItem } from "@/lib/firestore";
 import type {
-  Student, Incident, CheckinSession, GlobalSettings, SessionScope, AppUser, Bus,
+  Student, Incident, CheckinSession, GlobalSettings, SessionScope, AppUser, Bus, LostItem, LostItemStatus,
 } from "@/types";
 
 // ── Bus QR Modal ─────────────────────────────────────────────────
@@ -857,6 +859,130 @@ function SessionsTab({ sessions }: { sessions: CheckinSession[] }) {
   );
 }
 
+// ── Lost Items Tab ────────────────────────────────────────────────
+const STATUS_LABEL: Record<LostItemStatus, string> = {
+  lost: "분실", found: "습득", returned: "반환완료",
+};
+const STATUS_COLOR: Record<LostItemStatus, string> = {
+  lost: "bg-red-100 text-red-700",
+  found: "bg-yellow-100 text-yellow-700",
+  returned: "bg-green-100 text-green-700",
+};
+
+function LostItemsTab() {
+  const [items, setItems] = useState<LostItem[]>([]);
+  const [filter, setFilter] = useState<LostItemStatus | "all">("all");
+
+  useEffect(() => subscribeLostItems(setItems), []);
+
+  async function handleStatus(item: LostItem, next: LostItemStatus) {
+    await updateLostItemStatus(item.id, next);
+    toast.success("상태 변경됨");
+  }
+  async function handleDelete(item: LostItem) {
+    if (!confirm(`"${item.title}" 삭제하시겠습니까?`)) return;
+    await deleteLostItem(item.id);
+    toast.success("삭제됨");
+  }
+
+  const filtered = filter === "all" ? items : items.filter((i) => i.status === filter);
+  const counts = {
+    all: items.length,
+    lost: items.filter((i) => i.status === "lost").length,
+    found: items.filter((i) => i.status === "found").length,
+    returned: items.filter((i) => i.status === "returned").length,
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* 요약 통계 */}
+      <div className="grid grid-cols-3 gap-2">
+        {(["lost", "found", "returned"] as LostItemStatus[]).map((s) => (
+          <div key={s} className={`rounded-xl p-3 text-center ${STATUS_COLOR[s]} bg-opacity-50`}>
+            <p className="text-xl font-black">{counts[s]}</p>
+            <p className="text-xs font-medium mt-0.5">{STATUS_LABEL[s]}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* 필터 탭 */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1">
+        {(["all", "lost", "found", "returned"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              filter === f ? "bg-blue-600 text-white" : "bg-white text-gray-600 border border-gray-200"
+            }`}
+          >
+            {f === "all" ? "전체" : STATUS_LABEL[f]}
+            <span className={`ml-1 ${filter === f ? "text-blue-200" : "text-gray-400"}`}>
+              {counts[f]}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* 목록 */}
+      {filtered.length === 0 ? (
+        <div className="bg-white rounded-xl p-10 text-center text-gray-400 text-sm shadow-sm">
+          <PackageSearch className="w-8 h-8 mx-auto mb-2 opacity-30" />
+          등록된 항목이 없습니다.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((item) => (
+            <div key={item.id} className="bg-white rounded-xl shadow-sm p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="font-semibold text-gray-900 text-sm">{item.title}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[item.status]}`}>
+                      {STATUS_LABEL[item.status]}
+                    </span>
+                  </div>
+                  {item.description && <p className="text-xs text-gray-500 mb-1">{item.description}</p>}
+                  {item.location && (
+                    <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                      <MapPin className="w-3 h-3" />{item.location}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400">{item.reporterName}</p>
+                </div>
+                <button
+                  onClick={() => handleDelete(item)}
+                  className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors shrink-0"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              {/* 상태 변경 버튼 */}
+              {item.status !== "returned" && (
+                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                  {item.status === "lost" && (
+                    <button
+                      onClick={() => handleStatus(item, "found")}
+                      className="flex-1 text-xs font-medium text-yellow-700 bg-yellow-50 hover:bg-yellow-100 py-1.5 rounded-lg transition-colors"
+                    >
+                      습득 처리
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleStatus(item, "returned")}
+                    className="flex-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 py-1.5 rounded-lg transition-colors"
+                  >
+                    반환 완료
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Settings Tab ──────────────────────────────────────────────────
 function SettingsTab({ students }: { students: Student[] }) {
   const [settings, setSettings] = useState<GlobalSettings | null>(null);
@@ -1130,7 +1256,8 @@ export default function AdminPage() {
 
       <main className="max-w-2xl mx-auto px-4 py-5">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="w-full h-auto mb-5 p-0 bg-transparent flex gap-1.5">
+          <TabsList className="w-full h-auto mb-5 p-0 bg-transparent flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+
             <TabsTrigger
               value="dashboard"
               className="relative flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border-2 text-[11px] font-semibold transition-all duration-200 bg-white border-gray-200 text-gray-500 shadow-sm hover:border-blue-300 hover:text-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:border-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md"
@@ -1176,6 +1303,13 @@ export default function AdminPage() {
               <Settings className="w-4 h-4" />
               설정
             </TabsTrigger>
+            <TabsTrigger
+              value="lostItems"
+              className="relative flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border-2 text-[11px] font-semibold transition-all duration-200 bg-white border-gray-200 text-gray-500 shadow-sm hover:border-orange-300 hover:text-orange-600 data-[state=active]:bg-blue-600 data-[state=active]:border-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+            >
+              <PackageSearch className="w-4 h-4" />
+              분실물
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard">
@@ -1194,6 +1328,9 @@ export default function AdminPage() {
           </TabsContent>
           <TabsContent value="settings">
             <SettingsTab students={students} />
+          </TabsContent>
+          <TabsContent value="lostItems">
+            <LostItemsTab />
           </TabsContent>
         </Tabs>
       </main>

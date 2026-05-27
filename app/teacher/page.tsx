@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ClipboardList, Search, AlertTriangle, LogOut, Loader2,
-  Clock, Plus, ChevronRight, XCircle, GraduationCap, Bus, Hotel, Calendar, Phone,
-  MessageCircle, BarChart2, PackageSearch,
+  Clock, Plus, ChevronRight, ChevronLeft, XCircle, GraduationCap, Bus as BusIcon, Hotel, Calendar, Phone,
+  MessageCircle, BarChart2, PackageSearch, QrCode, Share2,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -17,9 +17,10 @@ import { signOut } from "@/lib/auth";
 import {
   subscribeOpenSessions, subscribeSessionCheckins,
   createManualSession, extendSession, closeSession,
-  getStudents,
+  getStudents, getBuses,
 } from "@/lib/firestore";
-import type { CheckinSession, Checkin, Student } from "@/types";
+import { generateBusQrDataUrl } from "@/lib/qr";
+import type { CheckinSession, Checkin, Student, Bus } from "@/types";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -31,6 +32,108 @@ import { MiniDonut } from "@/components/mini-donut";
 import { ActionCard, SectionHeader } from "@/components/action-card";
 import { BusBoardingBanner } from "@/components/bus-boarding-banner";
 
+// ── 담임 호차 QR 전시 컴포넌트 ────────────────────────────────────
+// 담임반 번호로 buses 컬렉션을 조회해 해당 호차 QR을 전체화면으로 보여준다.
+function TeacherBusQr({ 담임반 }: { 담임반: number }) {
+  const [show, setShow] = useState(false);
+  const [bus, setBus] = useState<Bus | null>(null);
+  const [qrUrl, setQrUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+
+  async function open() {
+    setShow(true);
+    if (bus) return; // 이미 로드됨
+    setLoading(true);
+    setNotFound(false);
+    try {
+      const buses = await getBuses();
+      // 탑승반 예: "1반,2반" — 담임반 숫자가 포함되는지 확인
+      const matched = buses.find((b) =>
+        b.탑승반.split(",").map((s) => s.trim()).includes(`${담임반}반`)
+      );
+      if (!matched) { setNotFound(true); return; }
+      setBus(matched);
+      setQrUrl(await generateBusQrDataUrl(matched.호차));
+    } catch {
+      toast.error("버스 QR 로드 실패");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!show) {
+    return (
+      <button
+        onClick={open}
+        className="w-full flex items-center gap-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-95 transition-all"
+      >
+        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+          <QrCode className="w-5 h-5 text-white" />
+        </div>
+        <div className="text-left">
+          <p className="font-bold text-white text-sm">탑승 QR 전시</p>
+          <p className="text-xs text-white/75">학생들이 QR을 스캔하며 탑승</p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-white/70 ml-auto shrink-0" />
+      </button>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-white flex flex-col">
+      {/* 헤더 */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 shrink-0">
+        <button onClick={() => setShow(false)} className="p-2 rounded-lg hover:bg-gray-100">
+          <ChevronLeft className="w-5 h-5 text-gray-600" />
+        </button>
+        <span className="font-bold text-gray-900">
+          {bus ? `${bus.호차}호차 탑승 QR` : "탑승 QR"}
+        </span>
+        {bus?.탑승반 && (
+          <span className="ml-auto text-sm text-gray-500">{bus.탑승반}</span>
+        )}
+      </div>
+
+      {/* QR 영역 */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-5 px-8 bg-white">
+        {loading && <Loader2 className="w-10 h-10 text-gray-300 animate-spin" />}
+        {notFound && (
+          <div className="text-center text-gray-400">
+            <BusIcon className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">배정된 호차를 찾을 수 없습니다.</p>
+            <p className="text-xs mt-1">관리자에게 버스 시트 등록을 요청하세요.</p>
+          </div>
+        )}
+        {bus && qrUrl && (
+          <>
+            <div className="text-center">
+              <p className="text-5xl font-black text-gray-900 mb-1">{bus.호차}호차</p>
+              {bus.탑승반 && <p className="text-lg text-gray-500 font-medium">{bus.탑승반}</p>}
+              {bus.인솔교사1 && (
+                <p className="text-sm text-gray-400 mt-0.5">
+                  인솔: {bus.인솔교사1}{bus.인솔교사2 ? ` · ${bus.인솔교사2}` : ""}
+                </p>
+              )}
+            </div>
+            <img
+              src={qrUrl}
+              alt={`${bus.호차}호차 QR`}
+              className="w-72 h-72 rounded-2xl border-4 border-gray-100 shadow-lg"
+            />
+            <p className="text-xs text-gray-400 text-center">
+              학생들이 스마트폰 카메라로 QR을 스캔하며 탑승하세요
+            </p>
+            <div className="flex items-center gap-1.5 text-xs text-blue-500 bg-blue-50 px-4 py-2 rounded-xl">
+              <Share2 className="w-3.5 h-3.5 shrink-0" />
+              캡처 후 카카오톡으로 공유: iOS 전원+음량올리기 · Android 전원+음량내리기
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function timeLeft(session: CheckinSession): string {
   const diff = session.endAt.toDate().getTime() - Date.now();
@@ -326,7 +429,7 @@ export default function TeacherPage() {
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                     {isBus
-                      ? <Bus className="w-5 h-5 text-white" />
+                      ? <BusIcon className="w-5 h-5 text-white" />
                       : <ClipboardList className="w-5 h-5 text-white" />}
                   </div>
                   <div>
@@ -363,6 +466,13 @@ export default function TeacherPage() {
           </FadeStaggerItem>
         )}
 
+        {/* 탑승 QR 전시 — 담임반이 있는 교사에게만 표시 */}
+        {appUser?.담임반 && (
+          <FadeStaggerItem>
+            <TeacherBusQr 담임반={appUser.담임반} />
+          </FadeStaggerItem>
+        )}
+
         {/* 핵심 액션 — 4개 grid */}
         <FadeStaggerItem>
           <SectionHeader title="자주 쓰는 액션" />
@@ -371,7 +481,7 @@ export default function TeacherPage() {
               label="학생 검색" desc="이름·번호 조회" />
             <ActionCard href="/teacher/incident" tone="red" variant="primary" icon={AlertTriangle}
               label="사건사고 등록" desc="인시던트 기록" />
-            <ActionCard href="/teacher/boarding" tone="indigo" variant="primary" icon={Bus}
+            <ActionCard href="/teacher/boarding" tone="indigo" variant="primary" icon={BusIcon}
               label="승차 현황" desc="호차·반별 실시간" />
             <ActionCard href="/chat" tone="amber" variant="primary" icon={MessageCircle}
               label="채팅" desc="공지 송수신" />
