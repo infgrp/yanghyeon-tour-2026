@@ -14,9 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import {
   Users, Upload, Settings, LogOut, Loader2, Shield, QrCode,
-  AlertTriangle, CheckCircle2, Clock, ChevronRight, Key,
-  ToggleLeft, ToggleRight, Plus, X, Search, GraduationCap, Timer, Bus, Calendar, Phone,
-  MessageCircle, Megaphone, Send, Mail, BarChart2, ClipboardList,
+  AlertTriangle, CheckCircle2, Clock, ChevronRight, ChevronLeft, Key,
+  ToggleLeft, ToggleRight, Plus, X, Search, GraduationCap, Timer, Bus as BusIcon, Calendar, Phone,
+  MessageCircle, Megaphone, Send, Mail, BarChart2, ClipboardList, Share2,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -33,10 +33,159 @@ import { FadeStaggerContainer, FadeStaggerItem } from "@/components/motion-prese
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { EnrollmentCharts, ClassDistribution } from "@/components/dashboard-charts";
 import { ActionCard, SectionHeader } from "@/components/action-card";
-import { printBusQRs } from "@/lib/qr";
+import { generateBusQrDataUrl } from "@/lib/qr";
 import type {
-  Student, Incident, CheckinSession, GlobalSettings, SessionScope, AppUser,
+  Student, Incident, CheckinSession, GlobalSettings, SessionScope, AppUser, Bus,
 } from "@/types";
+
+// ── Bus QR Modal ─────────────────────────────────────────────────
+function BusQrModal() {
+  const [buses, setBuses] = useState<Bus[]>([]);
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<Bus | null>(null);
+  const [qrUrl, setQrUrl] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+
+  async function selectBus(bus: Bus) {
+    setSelected(bus);
+    setLoading(true);
+    try {
+      const url = await generateBusQrDataUrl(bus.호차);
+      setQrUrl(url);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleOpen() {
+    setSelected(null);
+    setQrUrl("");
+    setOpen(true);
+    if (buses.length === 0) {
+      try {
+        const loaded = await getBuses();
+        setBuses(loaded);
+      } catch {
+        toast.error("버스 데이터 로드 실패");
+      }
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={handleOpen}
+        className="flex flex-col items-center gap-1.5 py-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all hover:border-green-300 w-full"
+      >
+        <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center">
+          <QrCode className="w-4 h-4 text-green-600" />
+        </div>
+        <p className="font-medium text-xs text-gray-900">버스 QR 보기</p>
+        <p className="text-[10px] text-gray-400">호차별 QR 캡처·공유</p>
+      </button>
+    );
+  }
+
+  // QR 전체화면 뷰
+  if (selected) {
+    return (
+      <div className="fixed inset-0 z-50 bg-white flex flex-col">
+        {/* 헤더 */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+          <button
+            onClick={() => { setSelected(null); setQrUrl(""); }}
+            className="p-2 rounded-lg hover:bg-gray-100"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          <span className="font-bold text-gray-900">{selected.호차}호차 QR</span>
+          {selected.탑승반 && (
+            <span className="ml-auto text-sm text-gray-500">{selected.탑승반}</span>
+          )}
+        </div>
+
+        {/* QR 코드 영역 — 캡처용 */}
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-8 bg-white">
+          <div className="text-center">
+            <p className="text-5xl font-black text-gray-900 mb-1">{selected.호차}호차</p>
+            {selected.탑승반 && (
+              <p className="text-lg text-gray-500 font-medium">{selected.탑승반}</p>
+            )}
+            {selected.인솔교사1 && (
+              <p className="text-sm text-gray-400 mt-0.5">
+                인솔: {selected.인솔교사1}{selected.인솔교사2 ? ` · ${selected.인솔교사2}` : ""}
+              </p>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="w-64 h-64 flex items-center justify-center">
+              <Loader2 className="w-10 h-10 text-gray-300 animate-spin" />
+            </div>
+          ) : (
+            <img
+              src={qrUrl}
+              alt={`${selected.호차}호차 QR`}
+              className="w-64 h-64 rounded-2xl border-4 border-gray-100 shadow-lg"
+            />
+          )}
+
+          <p className="text-xs text-gray-400 text-center">
+            화면을 캡처한 뒤 카카오톡·문자로 선생님께 전달하세요
+          </p>
+
+          <div className="flex items-center gap-1.5 text-xs text-blue-500 bg-blue-50 px-4 py-2 rounded-xl">
+            <Share2 className="w-3.5 h-3.5 shrink-0" />
+            iOS: 전원+음량올리기 · Android: 전원+음량내리기
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 호차 목록
+  return (
+    <div className="fixed inset-0 z-50 bg-gray-50 flex flex-col">
+      <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100">
+        <button onClick={() => setOpen(false)} className="p-2 rounded-lg hover:bg-gray-100">
+          <X className="w-5 h-5 text-gray-600" />
+        </button>
+        <span className="font-bold text-gray-900">버스 QR 보기</span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+        {buses.length === 0 ? (
+          <div className="text-center text-gray-400 text-sm py-16">
+            버스 데이터가 없습니다.<br />
+            <span className="text-xs">엑셀 업로드에서 buses 시트를 추가하세요.</span>
+          </div>
+        ) : (
+          buses.sort((a, b) => a.호차 - b.호차).map((bus) => (
+            <button
+              key={bus.id}
+              onClick={() => selectBus(bus)}
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-3 hover:border-green-300 hover:shadow-sm active:scale-[0.98] transition-all text-left"
+            >
+              <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center shrink-0">
+                <QrCode className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-gray-900">{bus.호차}호차</p>
+                {bus.탑승반 && <p className="text-xs text-gray-500 mt-0.5">{bus.탑승반}</p>}
+                {bus.인솔교사1 && (
+                  <p className="text-xs text-gray-400">
+                    {bus.인솔교사1}{bus.인솔교사2 ? ` · ${bus.인솔교사2}` : ""}
+                  </p>
+                )}
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ── Stat Card ────────────────────────────────────────────────────
 function StatCard({ label, value, sub, color, bg, icon: Icon }: {
@@ -424,9 +573,8 @@ function BroadcastDialog({ students }: { students: Student[] }) {
 }
 
 // ── Dashboard Tab ─────────────────────────────────────────────────
-function DashboardTab({ students, incidents, sessions, onPrintQR, printingQR }: {
+function DashboardTab({ students, incidents, sessions }: {
   students: Student[]; incidents: Incident[]; sessions: CheckinSession[];
-  onPrintQR: () => void; printingQR: boolean;
 }) {
   const registered = students.filter((s) => s.uid).length;
   const openIncidents = incidents.filter((i) => !i.종결여부).length;
@@ -491,7 +639,7 @@ function DashboardTab({ students, incidents, sessions, onPrintQR, printingQR }: 
             href="/teacher/boarding"
             variant="primary"
             tone="blue"
-            icon={Bus}
+            icon={BusIcon}
             label="승차 현황 모니터링"
             desc="전체 반 실시간"
           />
@@ -523,8 +671,7 @@ function DashboardTab({ students, incidents, sessions, onPrintQR, printingQR }: 
         <SectionHeader title="데이터 관리" subtitle="업로드·인쇄" />
         <div className="grid grid-cols-2 gap-2">
           <ActionCard href="/admin/upload" tone="blue" icon={Upload} label="Excel 업로드" desc="학생·호실·일정" />
-          <ActionCard onClick={onPrintQR} disabled={printingQR} tone="green" icon={QrCode}
-            label={printingQR ? "준비 중..." : "버스 QR 인쇄"} desc="호차별 출력" />
+          <BusQrModal />
         </div>
       </FadeStaggerItem>
     </FadeStaggerContainer>
@@ -892,7 +1039,6 @@ export default function AdminPage() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [sessions, setSessions] = useState<CheckinSession[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
-  const [printingQR, setPrintingQR] = useState(false);
   const [globalSettings, setGlobalSettings] = useState<GlobalSettings | null>(null);
 
   // 자동 점호 (클라이언트 폴링) — admin 페이지가 열려있을 때만 동작
@@ -934,18 +1080,7 @@ export default function AdminPage() {
     return unsub;
   }, [user]);
 
-  async function handlePrintQR() {
-    setPrintingQR(true);
-    try {
-      const buses = await getBuses();
-      if (buses.length === 0) { toast.error("버스 데이터가 없습니다."); return; }
-      await printBusQRs(buses.length);
-    } catch {
-      toast.error("QR 출력 준비 실패");
-    } finally {
-      setPrintingQR(false);
-    }
-  }
+
 
   // user가 null이면 (로그아웃 직후 redirect 대기 중) render 가드
   if (loading || dataLoading || !user) {
@@ -1046,7 +1181,6 @@ export default function AdminPage() {
           <TabsContent value="dashboard">
             <DashboardTab
               students={students} incidents={incidents} sessions={sessions}
-              onPrintQR={handlePrintQR} printingQR={printingQR}
             />
           </TabsContent>
           <TabsContent value="students">
